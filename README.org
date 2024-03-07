@@ -1,0 +1,72 @@
+#+title: Readme
+
+* Project Description
+
+This is an utility for programming small keyboards like this one:
+
+![](images/keyboard-6-1.png)
+
+Many of these keyboards are popular on AliExpress and Amazon, but the seller usually makes you
+download a windows exe file from a google drive account to program it. It also assumes
+- you use Windows (which I do not)
+- is clunky/shady (imho)
+- most importantly does not expose all keyboard features
+
+There are many revs of this macropad with different number of
+buttons and rotary encoder ([see some photos](#photos))
+- with/without Bluetooth
+- with/without WiFi
+
+* Supported Boards
+Tool has been reported to work with:
+ - 3×4 with 2 rotary encoders (Bluetooth version)
+ - 3×3 with 2 rotary encoders
+ - 3x2 with 1 rotary encoder (the one I have)
+ - 3x1 with 1 rotary encoder
+
+All these keyboards share same vendor/product IDs: 1189:8890
+
+* Usage
+
+** Validate configuration
+
+#+begin_example
+macropad-tool validate < your-config.yaml
+#+end_example
+
+Use 'show-keys' command to list all supported modifier and key names.
+
+** Write to keyboard
+
+#+begin_example
+macropad-tool program < your-config.yaml
+#+end_example
+
+
+* Listing USB devices
+
+** Mac
+#+begin_example
+ioreg -w0 -l -p IOUSB
+system_profiler SPUSBDataType
+#+end_example
+
+** Linux
+#+begin_example
+lsusb -v
+#+end_example
+
+* Monitoring generated keyboard and mouse events
+
+Monitoring keyboard:
+
+    pip3 install keyboard
+    sudo python3 -m keyboard
+
+Monitoring mouse:
+
+    python3 -m mouse
+
+* Photos
+![](images/keyboard-12-2.png)
+![](images/keyboard-3-1.jpg)
