@@ -81,9 +81,6 @@ and pressed down like a button
       - ccw: 'wheelup'
         press: 'click'
         cw: 'wheeldown'
-      - ccw: 'shift-wheelup'
-        press: 'shift-click'
-        cw: 'shift-wheeldown'
 #+end_src
 
 *** Mouse Events
@@ -101,9 +98,6 @@ Clicks may combine several buttons, like this: 'click+rclick'
       - ccw: 'left'
         press: 'enter'
         cw: 'right'
-      - ccw: 'ctrl-left'
-        press: 'ctrl-enter'
-        cw: 'ctrl-right'
 #+end_src
 
 *** Multimedia Support
@@ -118,7 +112,4 @@ Multimedia commands are also supported. Howerver, they cannot be mixed with norm
       - ccw: 'volumedown'
         press: 'mute'
         cw: 'volumeup'
-      - ccw: 'd'
-        press: 'e'
-        cw: 'f'
 #+end_src
