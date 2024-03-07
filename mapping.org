@@ -66,9 +66,9 @@ Arbitrary scan codes (decimal) may be given like this: '<101>'.
 
 #+begin_src yml
   - buttons:
-      - ["a", "ctrl-a", "alt-shift", "alt-ctrl,ctrl-b"]
-      - ["e", "f", "g", "h"]
-      - ["<100>", "j", "k", "l"]
+      - ["ctrl-a", "alt-shift", "alt-ctrl,ctrl-b"]
+      - ["f", "g", "h"]
+      - ["<100>", "k", "l"]
 #+end_src
 
 *** Rotary Encoders
@@ -96,9 +96,9 @@ Clicks may combine several buttons, like this: 'click+rclick'
 
 #+begin_src yml
   - buttons:
-      - ["click", "lclick", "rclick", "mclick"]
-      - ["click+rclick", "wheeldown", "shift-wheelup", "ctrl-wheelup"]
-      - ["alt-wheelup", "ctrl-click", "wheelup", "wheelup"]
+      - ["lclick", "rclick", "mclick"]
+      - ["wheeldown", "shift-wheelup", "ctrl-wheelup"]
+      - ["ctrl-click", "wheelup", "wheelup"]
     knobs:
       - ccw: 'left'
         press: 'enter'
@@ -114,9 +114,9 @@ Multimedia commands are also supported. Howerver, they cannot be mixed with norm
 
 #+begin_src yml
   - buttons:
-      - ["play", "prev", "next", "mute"]
-      - ["2", "3", "4", "5"]
-      - ["6", "7", "8", "9"]
+      - ["play", "next", "mute"]
+      - ["3", "4", "5"]
+      - ["7", "8", "9"]
     knobs:
       - ccw: 'volumedown'
         press: 'mute'

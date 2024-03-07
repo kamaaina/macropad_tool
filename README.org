@@ -31,7 +31,7 @@ All these keyboards share same vendor/product IDs: 1189:8890
 ** Validate configuration
 
 #+begin_example
-macropad-tool validate < your-config.yaml
+macropad-tool validate < your-config.yml
 #+end_example
 
 Use 'show-keys' command to list all supported modifier and key names.
@@ -39,7 +39,7 @@ Use 'show-keys' command to list all supported modifier and key names.
 ** Write to keyboard
 
 #+begin_example
-macropad-tool program < your-config.yaml
+macropad-tool program < your-config.yml
 #+end_example
 
 
