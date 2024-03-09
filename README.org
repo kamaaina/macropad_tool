@@ -44,6 +44,15 @@ Use 'show-keys' command to list all supported modifier and key names.
 macropad-tool program < your-config.yml
 #+end_example
 
+* Windows
+- Need to install WinLib to build https://winlibs.com. If you have chocolatey installed, just run
+
+  #+begin_example
+  choco install winlibs
+  #+end_example
+
+- You will need to install the USB Development Kit to be able to talk to
+the macropad. https://github.com/daynix/UsbDk/releases
 
 * Listing USB devices
 
