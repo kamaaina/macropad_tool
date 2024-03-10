@@ -65,6 +65,7 @@ You can combine up to 5 chords into a sequence using commas: 'ctrl-v,ctrl-c'
 Arbitrary scan codes (decimal) may be given like this: '<101>'.
 
 #+begin_src yml
+  # layer 1
   - buttons:
       - ["ctrl-a", "alt-shift", "alt-ctrl,ctrl-b"]
       - ["<100>", "k", "l"]
@@ -91,6 +92,7 @@ only 'ctrl', 'shift' and 'alt' are supported ('ctrl-wheeldown')
 Clicks may combine several buttons, like this: 'click+rclick'
 
 #+begin_src yml
+  # layer 2
   - buttons:
       - ["lclick", "rclick", "mclick"]
       - ["wheeldown", "shift-wheelup", "ctrl-wheelup"]
@@ -105,6 +107,7 @@ Clicks may combine several buttons, like this: 'click+rclick'
 Multimedia commands are also supported. Howerver, they cannot be mixed with normal keys and modifiers
 
 #+begin_src yml
+  # layer 3
   - buttons:
       - ["play", "next", "mute"]
       - ["3", "4", "5"]
