@@ -26,9 +26,15 @@ Tool has been reported to work with:
  - 3x2 with 1 rotary encoder (the one I have)
  - 3x1 with 1 rotary encoder
 
-All these keyboards share same vendor/product IDs: 1189:8890
+All these keyboards share same vendor/product IDs: 1189:8840
 
 * Usage
+** udev rules for linux
+To access the device without being root, copy the 80-macropad.rules to /etc/udev/rules.d and reload udev
+
+#+begin_example
+sudo udevadm trigger
+#+end_example
 
 ** Validate configuration
 
@@ -39,18 +45,21 @@ macropad-tool validate < your-config.yml
 Use 'show-keys' command to list all supported modifier and key names.
 
 ** Write to keyboard
+Needs root access or ensure udev rules was added. For Windows, need Administrator command prompt
 
 #+begin_example
 macropad-tool program < your-config.yml
 #+end_example
 
 * Windows
+** Compiling
 - Need to install WinLib to build https://winlibs.com. If you have chocolatey installed, just run
 
   #+begin_example
   choco install winlibs
   #+end_example
 
+** Running the Application
 - You will need to install the USB Development Kit to be able to talk to
 the macropad. https://github.com/daynix/UsbDk/releases
 

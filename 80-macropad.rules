@@ -1,0 +1,1 @@
+ATTRS{idProduct}=="8840", ATTRS{idVendor}=="1189", MODE="666", GROUP="users"

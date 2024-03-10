@@ -110,6 +110,7 @@ fn main() -> Result<()> {
                     }
                 }
             }
+            println!("デバイスのプログラミングが完了しました");
         }
 
         Command::Led(LedCommand { index }) => {
