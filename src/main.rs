@@ -1,23 +1,27 @@
 mod config;
 mod consts;
+mod decoder;
 mod keyboard;
+mod messages;
 mod options;
 mod parse;
+mod reader;
 
 use crate::config::Config;
-use crate::consts::PRODUCT_IDS;
+use crate::consts::{PRODUCT_IDS, TIMEOUT};
 use crate::keyboard::{
     k884x, k8880, Keyboard, KnobAction, MediaCode, Modifier, MouseAction, MouseButton,
     WellKnownCode,
 };
+use crate::messages::Messages;
 use crate::options::{Command, LedCommand};
 use crate::{keyboard::Key, options::Options};
 
 use anyhow::{anyhow, ensure, Result};
 use indoc::indoc;
 use itertools::Itertools;
-use log::debug;
-use rusb::{Context, Device, DeviceDescriptor, TransferType};
+use log::{debug, info};
+use rusb::{Context, Device, DeviceDescriptor, DeviceHandle, Direction, TransferType};
 
 use anyhow::Context as _;
 use clap::Parser as _;
@@ -29,7 +33,7 @@ fn main() -> Result<()> {
     env_logger::init();
     let options = Options::parse();
 
-    match options.command {
+    match &options.command {
         Command::ShowKeys => {
             println!("Modifiers: ");
             for m in Modifier::iter() {
@@ -110,23 +114,205 @@ fn main() -> Result<()> {
                     }
                 }
             }
+            let _ = keyboard.send(&Messages::end_program());
+
             println!("デバイスのプログラミングが完了しました");
         }
 
         Command::Led(LedCommand { index }) => {
             let mut keyboard = open_keyboard(&options)?;
-            keyboard.set_led(index)?;
+            keyboard.set_led(*index)?;
+        }
+
+        Command::Read { layer, mapping } => {
+            println!("read layer: {}, mapping: {}", layer, mapping);
+            let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
+            let mut keyboard = open_keyboard(&options)?;
+            let _ = keyboard.send(&messages::Messages::device_type());
+            let _ = keyboard.recieve(&mut buf);
+            let device_info = decoder::Decoder::get_device_info(&buf);
+            info!(
+                "OUT: 0x{:02x} IN: 0x{:02x}",
+                keyboard.get_out_endpoint(),
+                keyboard.get_in_endpoint()
+            );
+            debug!(
+                "number of keys: {} number of rotary encoders: {}",
+                device_info.num_keys, device_info.num_encoders
+            );
+            if *layer > 0 {
+                // read keys for specified layer
+                info!("reading keys for layer {}", layer);
+                let data = messages::Messages::read_config(
+                    device_info.num_keys,
+                    device_info.num_encoders,
+                    *layer,
+                );
+                let _ = keyboard.send(&data);
+
+                // read all messages from device
+                loop {
+                    /*
+                    let bytes_read = reader::Reader::read_device_msg(
+                        options.devel_options.in_endpoint_address,
+                        &handle,
+                        &mut buf,
+                    )?;
+                    */
+                    let bytes_read = keyboard.recieve(&mut buf)?;
+                    if bytes_read == 0 {
+                        break;
+                    }
+                    debug!("bytes read: {bytes_read}");
+                    debug!("data: {:02x?}", buf);
+                    let _ = decoder::Decoder::get_key_mapping(&buf);
+                }
+            }
+
+            /*
+                let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
+
+                let handle = find_and_init(&options)?;
+                // sanity check input values
+                if *layer > consts::NUM_LAYERS {
+                    return Err(anyhow!(
+                "Layer should be between 1 and {}. Have not seen a macropad with more than {} layers",
+                consts::NUM_LAYERS,
+                consts::NUM_LAYERS
+            ));
+                }
+
+                debug!("OUT addr: {}, IN addr: {}", 0, 0);
+
+                // get the number of keys and encoders
+                let device_info = decoder::Decoder::get_device_info(&buf);
+                debug!(
+                    "number of keys: {} number of rotary encoders: {}",
+                    device_info.num_keys, device_info.num_encoders
+                );
+
+                if *layer > 0 {
+                    // read keys for specified layer
+                    info!("reading keys for layer {}", layer);
+                    let data = messages::Messages::read_config(
+                        device_info.num_keys,
+                        device_info.num_encoders,
+                        *layer,
+                    );
+                    let _ = handle.write_interrupt(
+                        options.devel_options.out_endpoint_address,
+                        &data,
+                        TIMEOUT,
+                    );
+
+                    // read all messages from device
+                    loop {
+                        let bytes_read = reader::Reader::read_device_msg(
+                            options.devel_options.in_endpoint_address,
+                            &handle,
+                            &mut buf,
+                        )?;
+                        if bytes_read == 0 {
+                            break;
+                        }
+                        debug!("bytes read: {bytes_read}");
+                        debug!("data: {:02x?}", buf);
+                        let _ = decoder::Decoder::get_key_mapping(&buf);
+                    }
+                } else {
+                    // read keys for all layers
+                    for i in 1..=consts::NUM_LAYERS {
+                        info!("reading keys for layer {i}");
+                        let data = messages::Messages::read_config(
+                            device_info.num_keys,
+                            device_info.num_encoders,
+                            i,
+                        );
+                        let _ = handle.write_interrupt(
+                            options.devel_options.out_endpoint_address,
+                            &data,
+                            TIMEOUT,
+                        );
+
+                        // read all messages from device
+                        loop {
+                            let bytes_read = reader::Reader::read_device_msg(
+                                options.devel_options.in_endpoint_address,
+                                &handle,
+                                &mut buf,
+                            )?;
+                            if bytes_read == 0 {
+                                break;
+                            }
+                            debug!("bytes read: {bytes_read}");
+                            debug!("data: {:02x?}", buf);
+                            let _ = decoder::Decoder::get_key_mapping(&buf);
+                        }
+                    }
+                }
+
+                if mapping.is_empty() {
+                    // FIXME: write configuration to stdout
+                } else {
+                    // FIXME: write to file in yaml format
+                }
+                */
         }
     }
 
     Ok(())
 }
 
-fn find_interface_and_endpoint(
+fn find_and_init(options: &Options) -> Result<DeviceHandle<Context>> {
+    // find USB device based on the product id
+    let (device, _desc, _id_product) = find_device(
+        options.devel_options.vendor_id,
+        options
+            .devel_options
+            .product_id
+            .expect("expected product id"),
+    )
+    .context("find USB device")?;
+
+    // find correct endpoints; we need both IN and OUT
+    let (intf_num, endpt_addr_out, endpt_addr_in) = find_interface_and_endpoint(
+        &device,
+        None,
+        options.devel_options.out_endpoint_address,
+        options.devel_options.in_endpoint_address,
+    )?;
+    info!(
+        "found interface number: {intf_num}, OUT endpoint: 0x{:02x}, and IN endpoint: 0x{:02x}",
+        endpt_addr_out, endpt_addr_in
+    );
+
+    // open device
+    let mut handle = device.open().context("open USB device")?;
+    let _ = handle.set_auto_detach_kernel_driver(true);
+    handle
+        .claim_interface(intf_num)
+        .context("claim interface")?;
+
+    let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
+
+    // probe device to see what type of macropad we have
+    let mp_type = messages::Messages::device_type();
+    let _ = handle.write_interrupt(endpt_addr_out, &mp_type, consts::TIMEOUT);
+    let _ = reader::Reader::read_device_msg(
+        options.devel_options.in_endpoint_address,
+        &handle,
+        &mut buf,
+    );
+
+    Ok(handle)
+}
+
+pub fn find_interface_and_endpoint(
     device: &Device<Context>,
     interface_num: Option<u8>,
-    endpoint_addr: u8,
-) -> Result<(u8, u8)> {
+    endpoint_addr_out: u8,
+    endpoint_addr_in: u8,
+) -> Result<(u8, u8, u8)> {
     let conf_desc = device
         .config_descriptor(0)
         .context("get config #0 descriptor")?;
@@ -167,12 +353,29 @@ fn find_interface_and_endpoint(
             intf_desc
         );
 
-        // Look for suitable endpoints
-        if let Some(endpt_desc) = intf_desc.endpoint_descriptors().find(|ep| {
-            ep.transfer_type() == TransferType::Interrupt && ep.address() == endpoint_addr
-        }) {
-            debug!("Found endpoint {endpt_desc:?}");
-            return Ok((iface_num, endpt_desc.address()));
+        let descriptors = intf_desc.endpoint_descriptors();
+        // per usb spec, the max value for a usb endpoint is 7 bits (or 127)
+        // so set the values to be invalid by default
+        let mut out_if = 0xFF;
+        let mut in_if = 0xFF;
+        for endpoint in descriptors {
+            debug!("==> {:?} direction: {:?}", endpoint, endpoint.direction());
+            if endpoint.transfer_type() == TransferType::Interrupt
+                && endpoint.direction() == Direction::Out
+                && endpoint.address() == endpoint_addr_out
+            {
+                out_if = endpoint.address();
+            }
+            if endpoint.transfer_type() == TransferType::Interrupt
+                && endpoint.direction() == Direction::In
+                && endpoint.address() == endpoint_addr_in
+            {
+                in_if = endpoint.address();
+            }
+            if out_if < 0xFF && in_if < 0xFF {
+                debug!("Found endpoint {endpoint:?}");
+                return Ok((iface_num, out_if, in_if));
+            }
         }
     }
 
@@ -181,7 +384,14 @@ fn find_interface_and_endpoint(
 
 fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
     // Find USB device based on the product id
-    let (device, desc, id_product) = find_device(options).context("find USB device")?;
+    let (device, desc, id_product) = find_device(
+        options.devel_options.vendor_id,
+        options
+            .devel_options
+            .product_id
+            .expect("expected product id"),
+    )
+    .context("find USB device")?;
 
     ensure!(
         desc.num_configurations() == 1,
@@ -189,10 +399,11 @@ fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
     );
 
     // Find correct endpoint
-    let (intf_num, endpt_addr) = find_interface_and_endpoint(
+    let (intf_num, endpt_addr_out, endpt_addr_in) = find_interface_and_endpoint(
         &device,
         options.devel_options.interface_number,
-        options.devel_options.endpoint_address,
+        options.devel_options.out_endpoint_address,
+        options.devel_options.in_endpoint_address,
     )?;
 
     // Open device.
@@ -203,17 +414,15 @@ fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
         .context("claim interface")?;
 
     match id_product {
-        0x8840 | 0x8842 => {
-            k884x::Keyboard884x::new(handle, endpt_addr).map(|v| Box::new(v) as Box<dyn Keyboard>)
-        }
-        0x8880 => {
-            k8880::Keyboard8880::new(handle, endpt_addr).map(|v| Box::new(v) as Box<dyn Keyboard>)
-        }
+        0x8840 | 0x8842 => k884x::Keyboard884x::new(handle, endpt_addr_out, endpt_addr_in)
+            .map(|v| Box::new(v) as Box<dyn Keyboard>),
+        0x8880 => k8880::Keyboard8880::new(handle, endpt_addr_out, endpt_addr_in)
+            .map(|v| Box::new(v) as Box<dyn Keyboard>),
         _ => unreachable!("This shouldn't happen!"),
     }
 }
 
-fn find_device(opts: &Options) -> Result<(Device<Context>, DeviceDescriptor, u16)> {
+pub fn find_device(vid: u16, pid: u16) -> Result<(Device<Context>, DeviceDescriptor, u16)> {
     let options = vec![
         #[cfg(windows)]
         rusb::UsbOption::use_usbdk(),
@@ -231,12 +440,8 @@ fn find_device(opts: &Options) -> Result<(Device<Context>, DeviceDescriptor, u16
             desc.product_id()
         );
         let product_id = desc.product_id();
-        if desc.vendor_id() == opts.devel_options.vendor_id
-            && match opts.devel_options.product_id {
-                Some(prod_id) => prod_id == product_id,
-                None => PRODUCT_IDS.contains(&product_id),
-            }
-        {
+
+        if desc.vendor_id() == vid && desc.product_id() == pid {
             found.push((device, desc, product_id));
         }
     }
@@ -248,30 +453,8 @@ fn find_device(opts: &Options) -> Result<(Device<Context>, DeviceDescriptor, u16
         1 => Ok(found.pop().unwrap()),
         _ => {
             let mut addresses = vec![];
-            for (device, desc, product_id) in found {
-                /*let handle = device.open().context("open device")?;
-                let langs = handle.read_languages(DEFAULT_TIMEOUT).context("get langs")?;
-                dbg!(&langs);
-                let lang =
-                    // First try to find US English language
-                    langs.iter().find(|l| {
-                        l.primary_language() == PrimaryLanguage::English &&
-                        l.sub_language() == SubLanguage::UnitedStates
-                    })
-                    // Then any English sublanguage
-                    .or_else(|| langs.iter().find(|l| l.primary_language() == PrimaryLanguage::English))
-                    // Then just first available language
-                    .or_else(|| langs.first())
-                    // Ok, give up
-                    .ok_or_else(|| anyhow!("No languages found"))?;
-                dbg!(lang);
-                let serial = handle.read_serial_number_string(*lang, &desc, DEFAULT_TIMEOUT)
-                    .context("read serial")?;*/
+            for (device, _desc, _product_id) in found {
                 let address = (device.bus_number(), device.address());
-                if opts.devel_options.address.as_ref() == Some(&address) {
-                    return Ok((device, desc, product_id));
-                }
-
                 addresses.push(address);
             }
 

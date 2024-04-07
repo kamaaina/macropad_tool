@@ -2,20 +2,23 @@
 name = "macropad-tool"
 version = "0.0.1"
 edition = "2021"
-description = "Tool for programming ch57x keyboard"
+description = "Tool for programming macropad"
 
 [dependencies]
 rusb = "0.9"
 anyhow = "1.0"
-clap = { version = "4.0", features = ["derive"] }
-log = "0.4"
-env_logger = "0.10"
 itertools = "0.10"
+log = "0.4"
+indoc = "1.0"
+env_logger = "0.10"
+strum = "0.24"
+strum_macros = "0.24"
+clap = { version = "4.2", features = ["derive"] }
 enumset = "1.0"
+num = "0.4"
+num-derive = "0.4"
+num-traits = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "2.2"
 serde_yaml = "0.9"
 nom = "7.1"
-strum = "0.24"
-strum_macros = "0.24"
-indoc = "1.0"

@@ -6,7 +6,8 @@ use super::{Key, Keyboard, Macro, MouseAction, MouseEvent};
 
 pub struct Keyboard8880 {
     handle: DeviceHandle<Context>,
-    endpoint: u8,
+    out_endpoint: u8,
+    in_endpoint: u8,
 }
 
 impl Keyboard for Keyboard8880 {
@@ -16,18 +17,26 @@ impl Keyboard for Keyboard8880 {
         debug!("bind {} on layer {} to {}", key, layer, expansion);
 
         // Start key binding
-        self.send(&[0xfe, layer+1, 0x1, 0x1, 0, 0, 0, 0])?;
+        self.send(&[0xfe, layer + 1, 0x1, 0x1, 0, 0, 0, 0])?;
 
         match expansion {
             Macro::Keyboard(presses) => {
                 ensure!(presses.len() <= 5, "macro sequence is too long");
                 // For whatever reason empty key is added before others.
-                let iter = presses.iter().map(|accord| (accord.modifiers.as_u8(), accord.code.map_or(0, |c| c.value())));
-                let (len, items) = (presses.len() as u8, Box::new(std::iter::once((0, 0)).chain(iter)));
+                let iter = presses.iter().map(|accord| {
+                    (
+                        accord.modifiers.as_u8(),
+                        accord.code.map_or(0, |c| c.value()),
+                    )
+                });
+                let (len, items) = (
+                    presses.len() as u8,
+                    Box::new(std::iter::once((0, 0)).chain(iter)),
+                );
                 for (i, (modifiers, code)) in items.enumerate() {
                     self.send(&[
                         key.to_key_id_12()?,
-                        ((layer+1) << 4) | expansion.kind(),
+                        ((layer + 1) << 4) | expansion.kind(),
                         len,
                         i as u8,
                         modifiers,
@@ -39,17 +48,53 @@ impl Keyboard for Keyboard8880 {
             }
             Macro::Media(code) => {
                 let [low, high] = (*code as u16).to_le_bytes();
-                self.send(&[key.to_key_id_12()?, ((layer+1) << 4) | 0x02, low, high, 0, 0, 0, 0])?;
+                self.send(&[
+                    key.to_key_id_12()?,
+                    ((layer + 1) << 4) | 0x02,
+                    low,
+                    high,
+                    0,
+                    0,
+                    0,
+                    0,
+                ])?;
             }
             Macro::Mouse(MouseEvent(MouseAction::Click(buttons), modifier)) => {
                 ensure!(!buttons.is_empty(), "buttons must be given for click macro");
-                self.send(&[key.to_key_id_12()?, ((layer+1) << 4) | 0x03, buttons.as_u8(), 0, 0, 0, modifier.map_or(0, |m| m as u8), 0])?;
+                self.send(&[
+                    key.to_key_id_12()?,
+                    ((layer + 1) << 4) | 0x03,
+                    buttons.as_u8(),
+                    0,
+                    0,
+                    0,
+                    modifier.map_or(0, |m| m as u8),
+                    0,
+                ])?;
             }
             Macro::Mouse(MouseEvent(MouseAction::WheelUp, modifier)) => {
-                self.send(&[key.to_key_id_12()?, ((layer+1) << 4) | 0x03, 0, 0, 0, 0x01, modifier.map_or(0, |m| m as u8), 0])?;
+                self.send(&[
+                    key.to_key_id_12()?,
+                    ((layer + 1) << 4) | 0x03,
+                    0,
+                    0,
+                    0,
+                    0x01,
+                    modifier.map_or(0, |m| m as u8),
+                    0,
+                ])?;
             }
             Macro::Mouse(MouseEvent(MouseAction::WheelDown, modifier)) => {
-                self.send(&[key.to_key_id_12()?, ((layer+1) << 4) | 0x03, 0, 0, 0, 0xff, modifier.map_or(0, |m| m as u8), 0])?;
+                self.send(&[
+                    key.to_key_id_12()?,
+                    ((layer + 1) << 4) | 0x03,
+                    0,
+                    0,
+                    0,
+                    0xff,
+                    modifier.map_or(0, |m| m as u8),
+                    0,
+                ])?;
             }
         };
 
@@ -70,17 +115,26 @@ impl Keyboard for Keyboard8880 {
         &self.handle
     }
 
-    fn get_endpoint(&self) -> u8 {
-        self.endpoint
+    fn get_out_endpoint(&self) -> u8 {
+        self.out_endpoint
+    }
+
+    fn get_in_endpoint(&self) -> u8 {
+        self.in_endpoint
     }
 }
 
 impl Keyboard8880 {
-    pub fn new(handle: DeviceHandle<Context>, endpoint: u8) -> Result<Self> {
-        let mut keyboard = Self { handle, endpoint };
+    pub fn new(handle: DeviceHandle<Context>, out_endpoint: u8, in_endpoint: u8) -> Result<Self> {
+        let mut keyboard = Self {
+            handle,
+            out_endpoint,
+            in_endpoint,
+        };
 
         keyboard.send(&[])?;
 
         Ok(keyboard)
     }
 }
+

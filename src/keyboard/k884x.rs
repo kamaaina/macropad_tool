@@ -6,7 +6,8 @@ use super::{Key, Keyboard, Macro, MouseAction, MouseEvent};
 
 pub struct Keyboard884x {
     handle: DeviceHandle<Context>,
-    endpoint: u8,
+    out_endpoint: u8,
+    in_endpoint: u8,
 }
 
 impl Keyboard for Keyboard884x {
@@ -30,7 +31,7 @@ impl Keyboard for Keyboard884x {
 
         match expansion {
             Macro::Keyboard(presses) => {
-                ensure!(presses.len() <= 5, "macro sequence is too long");
+                ensure!(presses.len() <= 17, "macro sequence is too long");
                 // For whatever reason empty key is added before others.
                 let iter = presses.iter().map(|accord| {
                     (
@@ -76,18 +77,25 @@ impl Keyboard for Keyboard884x {
         &self.handle
     }
 
-    fn get_endpoint(&self) -> u8 {
-        self.endpoint
+    fn get_out_endpoint(&self) -> u8 {
+        self.out_endpoint
+    }
+
+    fn get_in_endpoint(&self) -> u8 {
+        self.in_endpoint
     }
 }
 
 impl Keyboard884x {
-    pub fn new(handle: DeviceHandle<Context>, endpoint: u8) -> Result<Self> {
-        let mut keyboard = Self { handle, endpoint };
+    pub fn new(handle: DeviceHandle<Context>, out_endpoint: u8, in_endpoint: u8) -> Result<Self> {
+        let mut keyboard = Self {
+            handle,
+            out_endpoint,
+            in_endpoint,
+        };
 
-        keyboard.send(&[])?;
+        //keyboard.send(&[])?;
 
         Ok(keyboard)
     }
 }
-

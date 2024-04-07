@@ -3,14 +3,14 @@ pub(crate) mod k8880;
 
 use crate::parse;
 
-use std::{time::Duration, str::FromStr, fmt::Display};
+use std::{fmt::Display, str::FromStr, time::Duration};
 
 use anyhow::{anyhow, ensure, Result};
-use enumset::{EnumSetType, EnumSet};
+use enumset::{EnumSet, EnumSetType};
 use log::debug;
-use rusb::{Context, DeviceHandle};
+use rusb::{Context, DeviceHandle, Error::Timeout};
 use serde_with::DeserializeFromStr;
-use strum_macros::{EnumString, Display, EnumIter, EnumMessage};
+use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 
 use itertools::Itertools as _;
 
@@ -21,20 +21,49 @@ pub trait Keyboard {
     fn set_led(&mut self, n: u8) -> Result<()>;
 
     fn get_handle(&self) -> &DeviceHandle<Context>;
-    fn get_endpoint(&self) -> u8;
+    fn get_out_endpoint(&self) -> u8;
+    fn get_in_endpoint(&self) -> u8;
 
     fn send(&mut self, msg: &[u8]) -> Result<()> {
-        let mut buf = [0; 64];
+        let mut buf = [0; 65];
         buf.iter_mut().zip(msg.iter()).for_each(|(dst, src)| {
             *dst = *src;
         });
 
         debug!("send: {:02x?}", buf);
-        let written = self
-            .get_handle()
-            .write_interrupt(self.get_endpoint(), &buf, DEFAULT_TIMEOUT)?;
+        let written =
+            self.get_handle()
+                .write_interrupt(self.get_out_endpoint(), &buf, DEFAULT_TIMEOUT)?;
         ensure!(written == buf.len(), "not all data written");
         Ok(())
+    }
+
+    fn recieve(&mut self, buf: &mut [u8]) -> Result<usize> {
+        let read = self
+            .get_handle()
+            .read_interrupt(self.get_in_endpoint(), buf, DEFAULT_TIMEOUT);
+
+        let mut bytes_read = 0;
+        if read.is_err() {
+            let e = read.err().unwrap();
+            match e {
+                Timeout => {
+                    debug!("timeout on read");
+                }
+
+                _ => {
+                    eprintln!("error reading interrupt - {}", e);
+                }
+            };
+        } else {
+            bytes_read = read.unwrap();
+        }
+
+        debug!("bytes read: {bytes_read}");
+        debug!("data: {:02x?}", buf);
+        debug!("----------------------------------------------------");
+
+        Ok(bytes_read)
     }
 }
 
@@ -42,11 +71,11 @@ pub trait Keyboard {
 #[derive(Debug, Clone, Copy, Display)]
 #[repr(u8)]
 pub enum KnobAction {
-    #[strum(serialize="ccw")]
+    #[strum(serialize = "ccw")]
     RotateCCW,
-    #[strum(serialize="press")]
+    #[strum(serialize = "press")]
     Press,
-    #[strum(serialize="cw")]
+    #[strum(serialize = "cw")]
     RotateCW,
 }
 
@@ -72,7 +101,7 @@ impl Key {
             Key::Button(n) if n >= 12 => Err(anyhow!("invalid key index")),
             Key::Button(n) => Ok(n + 1),
             Key::Knob(n, _) if n >= 3 => Err(anyhow!("invalid knob index")),
-            Key::Knob(n, action) => Ok(13 + 3*n + (action as u8)),
+            Key::Knob(n, action) => Ok(13 + 3 * n + (action as u8)),
         }
     }
 
@@ -81,7 +110,7 @@ impl Key {
             Key::Button(n) if n >= 16 => Err(anyhow!("invalid key index")),
             Key::Button(n) => Ok(n + 1),
             Key::Knob(n, _) if n >= 3 => Err(anyhow!("invalid knob index")),
-            Key::Knob(n, action) => Ok(16 + 3*n + (action as u8)),
+            Key::Knob(n, action) => Ok(16 + 3 * n + (action as u8)),
         }
     }
 }
@@ -89,43 +118,42 @@ impl Key {
 #[derive(Debug, EnumSetType, EnumString, EnumIter, EnumMessage, Display)]
 #[strum(ascii_case_insensitive)]
 pub enum Modifier {
-    #[strum(serialize="ctrl")]
+    #[strum(serialize = "ctrl")]
     Ctrl,
-    #[strum(serialize="shift")]
+    #[strum(serialize = "shift")]
     Shift,
-    #[strum(serialize="alt", serialize="opt")]
+    #[strum(serialize = "alt", serialize = "opt")]
     Alt,
-    #[strum(serialize="win", serialize="cmd")]
+    #[strum(serialize = "win", serialize = "cmd")]
     Win,
-    #[strum(serialize="rctrl")]
+    #[strum(serialize = "rctrl")]
     RightCtrl,
-    #[strum(serialize="rshift")]
+    #[strum(serialize = "rshift")]
     RightShift,
-    #[strum(serialize="ralt", serialize="ropt")]
+    #[strum(serialize = "ralt", serialize = "ropt")]
     RightAlt,
-    #[strum(serialize="rwin", serialize="rcmd")]
+    #[strum(serialize = "rwin", serialize = "rcmd")]
     RightWin,
 }
 
 pub type Modifiers = EnumSet<Modifier>;
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, EnumMessage, Display)]
 #[repr(u16)]
-#[strum(serialize_all="lowercase")]
+#[strum(serialize_all = "lowercase")]
 #[strum(ascii_case_insensitive)]
 pub enum MediaCode {
-	Next = 0xb5,
-    #[strum(serialize="previous", serialize="prev")]
-	Previous = 0xb6,
-	Stop = 0xb7,
-	Play = 0xcd,
-	Mute = 0xe2,
-	VolumeUp = 0xe9,
-	VolumeDown = 0xea,
-	Favorites = 0x182,
-	Calculator = 0x192,
-	ScreenLock = 0x19e,
+    Next = 0xb5,
+    #[strum(serialize = "previous", serialize = "prev")]
+    Previous = 0xb6,
+    Stop = 0xb7,
+    Play = 0xcd,
+    Mute = 0xe2,
+    VolumeUp = 0xe9,
+    VolumeDown = 0xea,
+    Favorites = 0x182,
+    Calculator = 0x192,
+    ScreenLock = 0x19e,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -169,7 +197,7 @@ impl Code {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, Display)]
 #[repr(u8)]
 #[strum(ascii_case_insensitive)]
-#[strum(serialize_all="lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum WellKnownCode {
     A = 0x04,
     B,
@@ -197,16 +225,26 @@ pub enum WellKnownCode {
     X,
     Y,
     Z,
-    #[strum(serialize="1")] N1,
-    #[strum(serialize="2")] N2,
-    #[strum(serialize="3")] N3,
-    #[strum(serialize="4")] N4,
-    #[strum(serialize="5")] N5,
-    #[strum(serialize="6")] N6,
-    #[strum(serialize="7")] N7,
-    #[strum(serialize="8")] N8,
-    #[strum(serialize="9")] N9,
-    #[strum(serialize="0")] N0,
+    #[strum(serialize = "1")]
+    N1,
+    #[strum(serialize = "2")]
+    N2,
+    #[strum(serialize = "3")]
+    N3,
+    #[strum(serialize = "4")]
+    N4,
+    #[strum(serialize = "5")]
+    N5,
+    #[strum(serialize = "6")]
+    N6,
+    #[strum(serialize = "7")]
+    N7,
+    #[strum(serialize = "8")]
+    N8,
+    #[strum(serialize = "9")]
+    N9,
+    #[strum(serialize = "0")]
+    N0,
     Enter,
     Escape,
     Backspace,
@@ -293,9 +331,13 @@ pub struct Accord {
 
 impl Accord {
     pub fn new<M>(modifiers: M, code: Option<Code>) -> Self
-        where M: Into<Modifiers>
+    where
+        M: Into<Modifiers>,
     {
-        Self { modifiers: modifiers.into(), code }
+        Self {
+            modifiers: modifiers.into(),
+            code,
+        }
     }
 }
 
@@ -337,12 +379,12 @@ pub enum MouseModifier {
 
 #[derive(Debug, EnumSetType, EnumIter, Display)]
 pub enum MouseButton {
-    #[strum(serialize="click")]
+    #[strum(serialize = "click")]
     Left,
-    #[strum(serialize="rclick")]
+    #[strum(serialize = "rclick")]
     Right,
-    #[strum(serialize="mclick")]
-    Middle
+    #[strum(serialize = "mclick")]
+    Middle,
 }
 
 pub type MouseButtons = EnumSet<MouseButton>;
@@ -360,8 +402,12 @@ impl Display for MouseAction {
             MouseAction::Click(buttons) => {
                 write!(f, "{}", buttons.iter().format("+"))?;
             }
-            MouseAction::WheelUp => { write!(f, "wheelup")?; }
-            MouseAction::WheelDown => { write!(f, "wheeldown")?; }
+            MouseAction::WheelUp => {
+                write!(f, "wheelup")?;
+            }
+            MouseAction::WheelDown => {
+                write!(f, "wheeldown")?;
+            }
         }
         Ok(())
     }

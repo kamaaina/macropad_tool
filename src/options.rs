@@ -25,8 +25,13 @@ pub struct DevelOptions {
     #[arg(long, value_parser=parse_address, hide=true)]
     pub address: Option<(u8, u8)>,
 
+    /// OUT endpoint address where data is written
     #[arg(long, default_value_t = 0x4, hide = true)]
-    pub endpoint_address: u8,
+    pub out_endpoint_address: u8,
+
+    /// IN endpoint address where data is read
+    #[arg(long, default_value_t = 0x84, hide = true)]
+    pub in_endpoint_address: u8,
 
     #[arg(long, hide = true)]
     pub interface_number: Option<u8>,
@@ -55,6 +60,17 @@ pub enum Command {
 
     /// Program key mappings from stdin to device
     Program,
+
+    /// Read configuration from device
+    Read {
+        /// Layer to read data for (layer is one based; 0 reads all layers)
+        #[clap(short, long, default_value_t = 0)]
+        layer: u8,
+
+        /// Output mapping as yml file
+        #[clap(short, long, default_value = "")]
+        mapping: String,
+    },
 
     /// Select LED backlight mode
     #[clap(hide = true)]
