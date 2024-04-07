@@ -126,15 +126,12 @@ impl Keyboard for Keyboard8880 {
 
 impl Keyboard8880 {
     pub fn new(handle: DeviceHandle<Context>, out_endpoint: u8, in_endpoint: u8) -> Result<Self> {
-        let mut keyboard = Self {
+        let keyboard = Self {
             handle,
             out_endpoint,
             in_endpoint,
         };
 
-        keyboard.send(&[])?;
-
         Ok(keyboard)
     }
 }
-

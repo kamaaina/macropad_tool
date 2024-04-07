@@ -8,6 +8,7 @@ use std::{fmt::Display, str::FromStr, time::Duration};
 use anyhow::{anyhow, ensure, Result};
 use enumset::{EnumSet, EnumSetType};
 use log::debug;
+use num_derive::FromPrimitive;
 use rusb::{Context, DeviceHandle, Error::Timeout};
 use serde_with::DeserializeFromStr;
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
@@ -194,7 +195,7 @@ impl Code {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, Display)]
+#[derive(Debug, FromPrimitive, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, Display)]
 #[repr(u8)]
 #[strum(ascii_case_insensitive)]
 #[strum(serialize_all = "lowercase")]

@@ -2,6 +2,8 @@ use anyhow::{ensure, Result};
 use log::debug;
 use rusb::{Context, DeviceHandle};
 
+use crate::consts;
+
 use super::{Key, Keyboard, Macro, MouseAction, MouseEvent};
 
 pub struct Keyboard884x {
@@ -31,7 +33,10 @@ impl Keyboard for Keyboard884x {
 
         match expansion {
             Macro::Keyboard(presses) => {
-                ensure!(presses.len() <= 17, "macro sequence is too long");
+                ensure!(
+                    presses.len() <= consts::MAX_KEY_PRESSES,
+                    "macro sequence is too long"
+                );
                 // For whatever reason empty key is added before others.
                 let iter = presses.iter().map(|accord| {
                     (
@@ -88,13 +93,11 @@ impl Keyboard for Keyboard884x {
 
 impl Keyboard884x {
     pub fn new(handle: DeviceHandle<Context>, out_endpoint: u8, in_endpoint: u8) -> Result<Self> {
-        let mut keyboard = Self {
+        let keyboard = Self {
             handle,
             out_endpoint,
             in_endpoint,
         };
-
-        //keyboard.send(&[])?;
 
         Ok(keyboard)
     }

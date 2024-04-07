@@ -5,10 +5,9 @@ mod keyboard;
 mod messages;
 mod options;
 mod parse;
-mod reader;
 
 use crate::config::Config;
-use crate::consts::{PRODUCT_IDS, TIMEOUT};
+use crate::consts::PRODUCT_IDS;
 use crate::keyboard::{
     k884x, k8880, Keyboard, KnobAction, MediaCode, Modifier, MouseAction, MouseButton,
     WellKnownCode,
@@ -21,7 +20,7 @@ use anyhow::{anyhow, ensure, Result};
 use indoc::indoc;
 use itertools::Itertools;
 use log::{debug, info};
-use rusb::{Context, Device, DeviceDescriptor, DeviceHandle, Direction, TransferType};
+use rusb::{Context, Device, DeviceDescriptor, Direction, TransferType};
 
 use anyhow::Context as _;
 use clap::Parser as _;

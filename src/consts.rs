@@ -16,9 +16,9 @@ pub const NUM_LAYERS: u8 = 3;
 ///
 pub const READ_BUF_SIZE: u8 = 72;
 
-/// Maximum number of keys that can be assigned to a KeyChord
+/// Maximum number of key presses that can be assigned to a key
 ///
-pub const MAX_KEYCHORD: usize = 17;
+pub const MAX_KEY_PRESSES: usize = 17;
 
 /// Maximum delay for a keypress
 ///
