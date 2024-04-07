@@ -125,7 +125,6 @@ fn main() -> Result<()> {
         }
 
         Command::Read { layer, mapping } => {
-            println!("read layer: {}, mapping: {}", layer, mapping);
             let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
             let mut keyboard = open_keyboard(&options)?;
             let _ = keyboard.send(&messages::Messages::device_type());
@@ -152,13 +151,6 @@ fn main() -> Result<()> {
 
                 // read all messages from device
                 loop {
-                    /*
-                    let bytes_read = reader::Reader::read_device_msg(
-                        options.devel_options.in_endpoint_address,
-                        &handle,
-                        &mut buf,
-                    )?;
-                    */
                     let bytes_read = keyboard.recieve(&mut buf)?;
                     if bytes_read == 0 {
                         break;
@@ -167,51 +159,20 @@ fn main() -> Result<()> {
                     debug!("data: {:02x?}", buf);
                     let _ = decoder::Decoder::get_key_mapping(&buf);
                 }
-            }
-
-            /*
-                let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
-
-                let handle = find_and_init(&options)?;
-                // sanity check input values
-                if *layer > consts::NUM_LAYERS {
-                    return Err(anyhow!(
-                "Layer should be between 1 and {}. Have not seen a macropad with more than {} layers",
-                consts::NUM_LAYERS,
-                consts::NUM_LAYERS
-            ));
-                }
-
-                debug!("OUT addr: {}, IN addr: {}", 0, 0);
-
-                // get the number of keys and encoders
-                let device_info = decoder::Decoder::get_device_info(&buf);
-                debug!(
-                    "number of keys: {} number of rotary encoders: {}",
-                    device_info.num_keys, device_info.num_encoders
-                );
-
-                if *layer > 0 {
-                    // read keys for specified layer
-                    info!("reading keys for layer {}", layer);
+            } else {
+                // read keys for all layers
+                for i in 1..=consts::NUM_LAYERS {
+                    info!("reading keys for layer {i}");
                     let data = messages::Messages::read_config(
                         device_info.num_keys,
                         device_info.num_encoders,
-                        *layer,
+                        i,
                     );
-                    let _ = handle.write_interrupt(
-                        options.devel_options.out_endpoint_address,
-                        &data,
-                        TIMEOUT,
-                    );
+                    let _ = keyboard.send(&data);
 
                     // read all messages from device
                     loop {
-                        let bytes_read = reader::Reader::read_device_msg(
-                            options.devel_options.in_endpoint_address,
-                            &handle,
-                            &mut buf,
-                        )?;
+                        let bytes_read = keyboard.recieve(&mut buf)?;
                         if bytes_read == 0 {
                             break;
                         }
@@ -219,50 +180,23 @@ fn main() -> Result<()> {
                         debug!("data: {:02x?}", buf);
                         let _ = decoder::Decoder::get_key_mapping(&buf);
                     }
-                } else {
-                    // read keys for all layers
-                    for i in 1..=consts::NUM_LAYERS {
-                        info!("reading keys for layer {i}");
-                        let data = messages::Messages::read_config(
-                            device_info.num_keys,
-                            device_info.num_encoders,
-                            i,
-                        );
-                        let _ = handle.write_interrupt(
-                            options.devel_options.out_endpoint_address,
-                            &data,
-                            TIMEOUT,
-                        );
-
-                        // read all messages from device
-                        loop {
-                            let bytes_read = reader::Reader::read_device_msg(
-                                options.devel_options.in_endpoint_address,
-                                &handle,
-                                &mut buf,
-                            )?;
-                            if bytes_read == 0 {
-                                break;
-                            }
-                            debug!("bytes read: {bytes_read}");
-                            debug!("data: {:02x?}", buf);
-                            let _ = decoder::Decoder::get_key_mapping(&buf);
-                        }
-                    }
                 }
+            }
 
-                if mapping.is_empty() {
-                    // FIXME: write configuration to stdout
-                } else {
-                    // FIXME: write to file in yaml format
-                }
-                */
+            if mapping.is_empty() {
+                // FIXME: write configuration to stdout
+                info!("write configuration to stdout");
+            } else {
+                // FIXME: write to file in yaml format
+                info!("write configuration to file: {mapping}");
+            }
         }
     }
 
     Ok(())
 }
 
+/*
 fn find_and_init(options: &Options) -> Result<DeviceHandle<Context>> {
     // find USB device based on the product id
     let (device, _desc, _id_product) = find_device(
@@ -306,6 +240,7 @@ fn find_and_init(options: &Options) -> Result<DeviceHandle<Context>> {
 
     Ok(handle)
 }
+*/
 
 pub fn find_interface_and_endpoint(
     device: &Device<Context>,
@@ -441,6 +376,7 @@ pub fn find_device(vid: u16, pid: u16) -> Result<(Device<Context>, DeviceDescrip
         );
         let product_id = desc.product_id();
 
+        // FIXME: add support for other product id's
         if desc.vendor_id() == vid && desc.product_id() == pid {
             found.push((device, desc, product_id));
         }
