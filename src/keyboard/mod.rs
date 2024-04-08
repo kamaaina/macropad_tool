@@ -51,6 +51,7 @@ pub trait Keyboard {
             match e {
                 Timeout => {
                     debug!("timeout on read");
+                    return Ok(0);
                 }
 
                 _ => {

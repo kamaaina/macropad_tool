@@ -45,8 +45,15 @@ impl Decoder {
             }
 
             // TODO: get the mapping
-            println!("==> {:?}", &val.unwrap().modifier);
-            //key_press.push(val);
+            let result = val.unwrap();
+            println!("==> {:?}", &result.modifier);
+            let mut key_str = Self::modifier_to_str(result.modifier);
+            if result.wkc.is_some() {
+                key_str += "-";
+                key_str += &result.wkc.unwrap().to_string();
+                println!("### key string: {key_str}");
+            }
+            //key_press.push(key_str);
 
             i += 2;
             if i > 45 {
@@ -148,18 +155,6 @@ impl Decoder {
             }
         }
 
-        /*
-        println!("foo: {} len: {}", foo, foo.len());
-        let mut need_dash = false;
-        for i in foo {
-            if need_dash {
-                retval += "-";
-            }
-            retval += &i.to_string();
-            need_dash = true;
-        }
-        println!("modifier: {retval}");
-        */
         println!("modifier: {retval}");
         retval
     }
@@ -217,6 +212,18 @@ impl Decoder {
 // 03fa110302000000000001e20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 // key 18 = volume +
 // 03fa120302000000000001e90000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+// program key
+// layer 1 4 keys (abcd)
+// 03fd010101000000000004000400050006000700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+// read
+// 03fa010101000000000004000400050006000700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+// program key
+// layer 1 one key (play/pause)
+// 03fd020102000000000002cd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+// read
+// 03fa020102000000000001cd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 #[cfg(test)]
 mod tests {

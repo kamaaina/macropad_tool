@@ -126,6 +126,8 @@ fn main() -> Result<()> {
         Command::Read { layer, mapping } => {
             let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
             let mut keyboard = open_keyboard(&options)?;
+
+            // get the type of device
             let _ = keyboard.send(&messages::Messages::device_type());
             let _ = keyboard.recieve(&mut buf);
             let device_info = decoder::Decoder::get_device_info(&buf);
@@ -138,7 +140,15 @@ fn main() -> Result<()> {
                 "number of keys: {} number of rotary encoders: {}",
                 device_info.num_keys, device_info.num_encoders
             );
+
+            // send message to get keys
             if *layer > 0 {
+                // specific layer
+                let _ = keyboard.send(&messages::Messages::read_config(
+                    device_info.num_keys,
+                    device_info.num_encoders,
+                    *layer,
+                ));
                 // read keys for specified layer
                 info!("reading keys for layer {}", layer);
                 let data = messages::Messages::read_config(
@@ -159,6 +169,12 @@ fn main() -> Result<()> {
                     let _ = decoder::Decoder::get_key_mapping(&buf);
                 }
             } else {
+                // all layers
+                let _ = keyboard.send(&messages::Messages::read_config(
+                    device_info.num_keys,
+                    device_info.num_encoders,
+                    *layer,
+                ));
                 // read keys for all layers
                 for i in 1..=consts::NUM_LAYERS {
                     info!("reading keys for layer {i}");
