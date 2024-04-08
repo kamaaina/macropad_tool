@@ -1,11 +1,11 @@
-use crate::keyboard::{MediaCode, Modifier, WellKnownCode};
-use num::{FromPrimitive, ToPrimitive};
+use crate::keyboard::{MediaCode, Modifier, Modifiers, WellKnownCode};
+use num::FromPrimitive;
 
 pub struct Decoder {}
 
 struct KeyCode {
     #[allow(unused)]
-    modifier: Option<Modifier>,
+    modifier: u8,
     #[allow(unused)]
     media_code: Option<MediaCode>,
     #[allow(unused)]
@@ -68,39 +68,100 @@ impl Decoder {
             return None;
         }
 
-        // get the modifier
-        let mut modifier = None;
-        let mut modifiers = 0u8;
-        if buf[0] >> 1 & 1 == 1 {
-            println!("ctrl modifier found");
-            let val = <Modifier as ToPrimitive>::to_u8(&Modifier::Ctrl)?;
-            modifiers |= val;
-        }
-        if buf[0] >> 2 & 1 == 1 {
-            println!("alt modifier found");
-            let val = <Modifier as ToPrimitive>::to_u8(&Modifier::Alt)?;
-            modifiers |= val;
-        }
-        if buf[0] >> 3 & 1 == 1 {
-            println!("shift modifier found");
-            let val = <Modifier as ToPrimitive>::to_u8(&Modifier::Shift)?;
-            modifiers |= val;
-        }
-        if modifiers > 0 {
-            modifier = Some(<Modifier as FromPrimitive>::from_u8(modifiers))?;
-            println!("modifier: {:?}", modifier);
-        }
-
         // get the key/mouse combination
         let mut da_key = None;
         if buf[1] > 0 {
             da_key = Some(<WellKnownCode as FromPrimitive>::from_u32(buf[1].into()))?;
         }
         Some(KeyCode {
-            modifier,
+            modifier: buf[0],
             media_code: None,
             wkc: da_key,
         })
+    }
+
+    pub fn modifier_to_str(modifier: u8) -> String {
+        let mut retval = String::new();
+        for i in 0..=7 {
+            if modifier >> i & 1 == 1 {
+                match i {
+                    0 => {
+                        // left ctrl
+                        if retval.len() > 0 {
+                            retval += "-ctrl";
+                        } else {
+                            retval += "ctrl";
+                        }
+                    }
+                    1 => {
+                        // left shift
+                        if retval.len() > 0 {
+                            retval += "-shift";
+                        } else {
+                            retval += "shift";
+                        }
+                    }
+                    2 => {
+                        // left alt
+                        if retval.len() > 0 {
+                            retval += "-alt";
+                        } else {
+                            retval += "alt";
+                        }
+                    }
+                    3 => {
+                        // window key
+                        if retval.len() > 0 {
+                            retval += "-win";
+                        } else {
+                            retval += "win";
+                        }
+                    }
+                    4 => {
+                        // right ctrl
+                        if retval.len() > 0 {
+                            retval += "-rctrl";
+                        } else {
+                            retval += "rctrl";
+                        }
+                    }
+                    5 => {
+                        // right shift
+                        if retval.len() > 0 {
+                            retval += "-rshift";
+                        } else {
+                            retval += "rshift";
+                        }
+                    }
+                    6 => {
+                        // right alt
+                        if retval.len() > 0 {
+                            retval += "-ralt";
+                        } else {
+                            retval += "ralt";
+                        }
+                    }
+                    _ => {
+                        break;
+                    }
+                }
+            }
+        }
+
+        /*
+        println!("foo: {} len: {}", foo, foo.len());
+        let mut need_dash = false;
+        for i in foo {
+            if need_dash {
+                retval += "-";
+            }
+            retval += &i.to_string();
+            need_dash = true;
+        }
+        println!("modifier: {retval}");
+        */
+        println!("modifier: {retval}");
+        retval
     }
 }
 
@@ -169,6 +230,12 @@ mod tests {
     fn foo() {
         let x: Modifiers = Modifier::Alt | Modifier::Ctrl;
         println!("x: {}", x);
+    }
+
+    #[test]
+    fn modifier_test() {
+        assert_eq!(Decoder::modifier_to_str(0x06), "shift-alt");
+        assert_eq!(Decoder::modifier_to_str(0x60), "rshift-ralt");
     }
 
     #[test]

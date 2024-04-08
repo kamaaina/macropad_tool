@@ -1,22 +1,25 @@
-///! Collection of NOM parsers for various things.
-///! Generally only `parse` and `from_str` functions should be called
-///! from outside of this module, they ensures that whole input is
-///! consumed.
-///! Other functions are composable parsers for use within this module
-///! or as parameters for functions mentioned above.
+//! Collection of NOM parsers for various things.
+//! Generally only `parse` and `from_str` functions should be called
+//! from outside of this module, they ensures that whole input is
+//! consumed.
+//! Other functions are composable parsers for use within this module
+//! or as parameters for functions mentioned above.
 
 use nom::{
-    Parser, IResult, InputLength,
     branch::alt,
-    sequence::{tuple, terminated, separated_pair, delimited, pair},
-    multi::{separated_list1, fold_many0},
     bytes::complete::tag,
-    character::complete::{char, alpha1, alphanumeric1, digit1},
-    combinator::{map, map_res, opt, all_consuming, value},
+    character::complete::{alpha1, alphanumeric1, char, digit1},
+    combinator::{all_consuming, map, map_res, opt, value},
     error::ParseError,
+    multi::{fold_many0, separated_list1},
+    sequence::{delimited, pair, separated_pair, terminated, tuple},
+    IResult, InputLength, Parser,
 };
 
-use crate::keyboard::{Accord, Modifier, Modifiers, Macro, MouseEvent, MouseModifier, MouseButton, MouseButtons, MouseAction, MediaCode, Code, WellKnownCode};
+use crate::keyboard::{
+    Accord, Code, Macro, MediaCode, Modifier, Modifiers, MouseAction, MouseButton, MouseButtons,
+    MouseEvent, MouseModifier, WellKnownCode,
+};
 
 use std::str::FromStr;
 
@@ -31,12 +34,12 @@ fn media_code(s: &str) -> IResult<&str, MediaCode> {
 pub fn code(s: &str) -> IResult<&str, Code> {
     let mut parser = alt((
         map(
-            delimited(char('<'),
-                      map_res(digit1, str::parse),
-                      char('>')),
-            Code::Custom),
-        map_res(alphanumeric1,
-                |word| WellKnownCode::from_str(word).map(Code::WellKnown)),
+            delimited(char('<'), map_res(digit1, str::parse), char('>')),
+            Code::Custom,
+        ),
+        map_res(alphanumeric1, |word| {
+            WellKnownCode::from_str(word).map(Code::WellKnown)
+        }),
     ));
     parser(s)
 }
@@ -47,26 +50,29 @@ pub fn modifier(s: &str) -> IResult<&str, Modifier> {
 }
 
 pub fn accord(s: &str) -> IResult<&str, Accord> {
-    enum Fix { Modifier(Modifier), Code(Code) }
+    enum Fix {
+        Modifier(Modifier),
+        Code(Code),
+    }
 
     let mut parser = alt((
         // <code>
-        map(code,
-            |code| Accord::new(Modifiers::empty(), Some(code))),
-
+        map(code, |code| Accord::new(Modifiers::empty(), Some(code))),
         // (<modifier> '-')* (<code>|<modifier>)?
-        map(pair(
-            fold_many0(terminated(modifier, char('-')),
-                       Modifiers::empty,
-                       |mods, m| mods | m),
-            alt((
-                map(code, Fix::Code),
-                map(modifier, Fix::Modifier),
-            )),
-        ), |(mods, fix)| match fix {
-            Fix::Code(code) => Accord::new(mods, Some(code)),
-            Fix::Modifier(m) => Accord::new(mods | m, None),
-        })
+        map(
+            pair(
+                fold_many0(
+                    terminated(modifier, char('-')),
+                    Modifiers::empty,
+                    |mods, m| mods | m,
+                ),
+                alt((map(code, Fix::Code), map(modifier, Fix::Modifier))),
+            ),
+            |(mods, fix)| match fix {
+                Fix::Code(code) => Accord::new(mods, Some(code)),
+                Fix::Modifier(m) => Accord::new(mods | m, None),
+            },
+        ),
     ));
     parser(s)
 }
@@ -90,7 +96,7 @@ fn mouse_event(s: &str) -> IResult<&str, MouseEvent> {
             opt(terminated(mouse_modifier, char('-'))),
             alt((click, wheel)),
         )),
-        |(modifier, action)| MouseEvent(action, modifier)
+        |(modifier, action)| MouseEvent(action, modifier),
     );
 
     event(s)
@@ -119,25 +125,32 @@ where
     P: Parser<I, O, E>,
 {
     use nom::Finish as _;
-    all_consuming(parser)(input).finish().map(|(_, value)| value)
+    all_consuming(parser)(input)
+        .finish()
+        .map(|(_, value)| value)
 }
 
 /// Parses string using given parser, as `parse` do, but also converts string reference
 /// in returned error to String, so it may be used in implementations of `FromStr`.
 pub fn from_str<O, P>(parser: P, s: &str) -> std::result::Result<O, nom::error::Error<String>>
 where
-    for <'a> P: Parser<&'a str, O, nom::error::Error<&'a str>>,
+    for<'a> P: Parser<&'a str, O, nom::error::Error<&'a str>>,
 {
     match parse(parser, s) {
         Ok(value) => Ok(value),
-        Err(nom::error::Error { input, code }) =>
-            Err(nom::error::Error { input: input.to_owned(), code }),
+        Err(nom::error::Error { input, code }) => Err(nom::error::Error {
+            input: input.to_owned(),
+            code,
+        }),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::keyboard::{Accord, Modifiers, Code, Modifier, Macro, MouseEvent, MouseModifier, MouseButton, MouseAction, MediaCode, WellKnownCode};
+    use crate::keyboard::{
+        Accord, Code, Macro, MediaCode, Modifier, Modifiers, MouseAction, MouseButton, MouseEvent,
+        MouseModifier, WellKnownCode,
+    };
 
     #[test]
     fn parse_custom_code() {
@@ -146,13 +159,46 @@ mod tests {
 
     #[test]
     fn parse_accord() {
-        assert_eq!("A".parse(), Ok(Accord::new(Modifiers::empty(), Some(WellKnownCode::A.into()))));
-        assert_eq!("a".parse(), Ok(Accord::new(Modifiers::empty(), Some(WellKnownCode::A.into()))));
-        assert_eq!("f1".parse(), Ok(Accord::new(Modifiers::empty(), Some(WellKnownCode::F1.into()))));
-        assert_eq!("ctrl-A".parse(), Ok(Accord::new(Modifier::Ctrl, Some(WellKnownCode::A.into()))));
-        assert_eq!("win-ctrl-A".parse(), Ok(Accord::new(Modifier::Win | Modifier::Ctrl, Some(WellKnownCode::A.into()))));
-        assert_eq!("win-ctrl".parse(), Ok(Accord::new(Modifier::Win | Modifier::Ctrl, None)));
-        assert_eq!("shift-<100>".parse(), Ok(Accord::new(Modifier::Shift, Some(Code::Custom(100)))));
+        assert_eq!(
+            "A".parse(),
+            Ok(Accord::new(
+                Modifiers::empty(),
+                Some(WellKnownCode::A.into())
+            ))
+        );
+        assert_eq!(
+            "a".parse(),
+            Ok(Accord::new(
+                Modifiers::empty(),
+                Some(WellKnownCode::A.into())
+            ))
+        );
+        assert_eq!(
+            "f1".parse(),
+            Ok(Accord::new(
+                Modifiers::empty(),
+                Some(WellKnownCode::F1.into())
+            ))
+        );
+        assert_eq!(
+            "ctrl-A".parse(),
+            Ok(Accord::new(Modifier::Ctrl, Some(WellKnownCode::A.into())))
+        );
+        assert_eq!(
+            "win-ctrl-A".parse(),
+            Ok(Accord::new(
+                Modifier::Win | Modifier::Ctrl,
+                Some(WellKnownCode::A.into())
+            ))
+        );
+        assert_eq!(
+            "win-ctrl".parse(),
+            Ok(Accord::new(Modifier::Win | Modifier::Ctrl, None))
+        );
+        assert_eq!(
+            "shift-<100>".parse(),
+            Ok(Accord::new(Modifier::Shift, Some(Code::Custom(100))))
+        );
 
         assert!("a1".parse::<Accord>().is_err());
         assert!("a+".parse::<Accord>().is_err());
@@ -160,26 +206,48 @@ mod tests {
 
     #[test]
     fn parse_macro() {
-        assert_eq!("A,B".parse(), Ok(Macro::Keyboard(vec![
-            Accord::new(Modifiers::empty(), Some(WellKnownCode::A.into())),
-            Accord::new(Modifiers::empty(), Some(WellKnownCode::B.into())),
-        ])));
-        assert_eq!("ctrl-A,alt-backspace".parse(), Ok(Macro::Keyboard(vec![
-            Accord::new(Modifier::Ctrl, Some(WellKnownCode::A.into())),
-            Accord::new(Modifier::Alt, Some(WellKnownCode::Backspace.into())),
-        ])));
-        assert_eq!("click".parse(), Ok(Macro::Mouse(
-            MouseEvent(MouseAction::Click(MouseButton::Left.into()), None)
-        )));
-        assert_eq!("click+rclick".parse(), Ok(Macro::Mouse(
-            MouseEvent(MouseAction::Click(MouseButton::Left | MouseButton::Right), None)
-        )));
-        assert_eq!("ctrl-wheelup".parse(), Ok(Macro::Mouse(
-            MouseEvent(MouseAction::WheelUp, Some(MouseModifier::Ctrl))
-        )));
-        assert_eq!("ctrl-click".parse(), Ok(Macro::Mouse(
-            MouseEvent(MouseAction::Click(MouseButton::Left.into()), Some(MouseModifier::Ctrl))
-        )));
+        assert_eq!(
+            "A,B".parse(),
+            Ok(Macro::Keyboard(vec![
+                Accord::new(Modifiers::empty(), Some(WellKnownCode::A.into())),
+                Accord::new(Modifiers::empty(), Some(WellKnownCode::B.into())),
+            ]))
+        );
+        assert_eq!(
+            "ctrl-A,alt-backspace".parse(),
+            Ok(Macro::Keyboard(vec![
+                Accord::new(Modifier::Ctrl, Some(WellKnownCode::A.into())),
+                Accord::new(Modifier::Alt, Some(WellKnownCode::Backspace.into())),
+            ]))
+        );
+        assert_eq!(
+            "click".parse(),
+            Ok(Macro::Mouse(MouseEvent(
+                MouseAction::Click(MouseButton::Left.into()),
+                None
+            )))
+        );
+        assert_eq!(
+            "click+rclick".parse(),
+            Ok(Macro::Mouse(MouseEvent(
+                MouseAction::Click(MouseButton::Left | MouseButton::Right),
+                None
+            )))
+        );
+        assert_eq!(
+            "ctrl-wheelup".parse(),
+            Ok(Macro::Mouse(MouseEvent(
+                MouseAction::WheelUp,
+                Some(MouseModifier::Ctrl)
+            )))
+        );
+        assert_eq!(
+            "ctrl-click".parse(),
+            Ok(Macro::Mouse(MouseEvent(
+                MouseAction::Click(MouseButton::Left.into()),
+                Some(MouseModifier::Ctrl)
+            )))
+        );
     }
 
     #[test]

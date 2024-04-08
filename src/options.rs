@@ -1,8 +1,7 @@
-use std::num::ParseIntError;
-
 use crate::consts::VENDOR_ID;
 use crate::parse;
 use clap::{Args, Parser, Subcommand};
+use std::num::ParseIntError;
 
 #[derive(Parser)]
 pub struct Options {
@@ -41,7 +40,7 @@ pub fn hex_or_decimal(s: &str) -> Result<u16, ParseIntError> {
     if s.to_ascii_lowercase().starts_with("0x") {
         u16::from_str_radix(&s[2..], 16)
     } else {
-        u16::from_str_radix(s, 10)
+        s.parse::<u16>()
     }
 }
 
