@@ -1,9 +1,10 @@
 pub(crate) mod k884x;
 pub(crate) mod k8880;
 
+use crate::consts;
 use crate::parse;
 
-use std::{fmt::Display, str::FromStr, time::Duration};
+use std::{fmt::Display, str::FromStr};
 
 use anyhow::{anyhow, ensure, Result};
 use enumset::{EnumSet, EnumSetType};
@@ -14,8 +15,6 @@ use serde_with::DeserializeFromStr;
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 
 use itertools::Itertools as _;
-
-const DEFAULT_TIMEOUT: Duration = Duration::from_millis(100);
 
 pub trait Keyboard {
     fn bind_key(&mut self, layer: u8, key: Key, expansion: &Macro) -> Result<()>;
@@ -32,17 +31,19 @@ pub trait Keyboard {
         });
 
         debug!("send: {:02x?}", buf);
-        let written =
-            self.get_handle()
-                .write_interrupt(self.get_out_endpoint(), &buf, DEFAULT_TIMEOUT)?;
+        let written = self.get_handle().write_interrupt(
+            self.get_out_endpoint(),
+            &buf,
+            consts::DEFAULT_TIMEOUT,
+        )?;
         ensure!(written == buf.len(), "not all data written");
         Ok(())
     }
 
     fn recieve(&mut self, buf: &mut [u8]) -> Result<usize> {
-        let read = self
-            .get_handle()
-            .read_interrupt(self.get_in_endpoint(), buf, DEFAULT_TIMEOUT);
+        let read =
+            self.get_handle()
+                .read_interrupt(self.get_in_endpoint(), buf, consts::DEFAULT_TIMEOUT);
 
         let mut bytes_read = 0;
         if read.is_err() {

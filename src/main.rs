@@ -375,10 +375,16 @@ pub fn find_device(vid: u16, pid: u16) -> Result<(Device<Context>, DeviceDescrip
         );
         let product_id = desc.product_id();
 
+        if desc.vendor_id() == vid && PRODUCT_IDS.contains(&pid) {
+            found.push((device, desc, product_id));
+        }
+
+        /*
         // FIXME: add support for other product id's
         if desc.vendor_id() == vid && desc.product_id() == pid {
             found.push((device, desc, product_id));
         }
+        */
     }
 
     match found.len() {

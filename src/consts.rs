@@ -5,7 +5,7 @@ pub const PRODUCT_IDS: [u16; 3] = [0x8840, 0x8842, 0x8890];
 
 /// Timeout for reading from USB
 ///
-pub const TIMEOUT: Duration = Duration::from_millis(100);
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_millis(100);
 
 /// Number of layers on the macropad. Depending on the model,
 /// some layers are no accessible
