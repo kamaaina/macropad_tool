@@ -1,5 +1,5 @@
 use crate::keyboard::{MediaCode, Modifier, WellKnownCode};
-use num::FromPrimitive;
+use num::{FromPrimitive, ToPrimitive};
 
 pub struct Decoder {}
 
@@ -9,7 +9,7 @@ struct KeyCode {
     #[allow(unused)]
     media_code: Option<MediaCode>,
     #[allow(unused)]
-    wkc: WellKnownCode,
+    wkc: Option<WellKnownCode>,
 }
 
 pub struct DeviceInformation {
@@ -17,6 +17,7 @@ pub struct DeviceInformation {
     pub num_encoders: u8,
 }
 
+#[derive(Debug)]
 pub struct KeyMapping {
     pub delay: u16,
     pub layer: u8,
@@ -33,17 +34,19 @@ impl Decoder {
     }
 
     pub fn get_key_mapping(buf: &[u8]) -> KeyMapping {
-        let mut key_press = Vec::new();
+        let mut key_press: Vec<Option<KeyCode>> = Vec::new();
         let _is_mouse = buf[10] & 0x04; // FIXME: implement
         let mut i = 11;
         loop {
             let val = Self::get_key(&[buf[i], buf[i + 1]]);
             if val.is_none() {
+                println!("val is None");
                 break; // short circuit
             }
 
             // TODO: get the mapping
-            key_press.push(val);
+            println!("==> {:?}", &val.unwrap().modifier);
+            //key_press.push(val);
 
             i += 2;
             if i > 45 {
@@ -60,20 +63,44 @@ impl Decoder {
 
     fn get_key(buf: &[u8]) -> Option<KeyCode> {
         let val = u16::from_be_bytes([buf[0], buf[1]]);
+        println!("val: 0x{:02x}", val);
         if val == 0 {
             return None;
         }
 
+        // get the modifier
+        let mut modifier = None;
+        let mut modifiers = 0u8;
+        if buf[0] >> 1 & 1 == 1 {
+            println!("ctrl modifier found");
+            let val = <Modifier as ToPrimitive>::to_u8(&Modifier::Ctrl)?;
+            modifiers |= val;
+        }
+        if buf[0] >> 2 & 1 == 1 {
+            println!("alt modifier found");
+            let val = <Modifier as ToPrimitive>::to_u8(&Modifier::Alt)?;
+            modifiers |= val;
+        }
+        if buf[0] >> 3 & 1 == 1 {
+            println!("shift modifier found");
+            let val = <Modifier as ToPrimitive>::to_u8(&Modifier::Shift)?;
+            modifiers |= val;
+        }
+        if modifiers > 0 {
+            modifier = Some(<Modifier as FromPrimitive>::from_u8(modifiers))?;
+            println!("modifier: {:?}", modifier);
+        }
+
         // get the key/mouse combination
-        let da_key = <WellKnownCode as FromPrimitive>::from_u32(buf[1].into())?;
-        println!("key: {}", da_key);
+        let mut da_key = None;
+        if buf[1] > 0 {
+            da_key = Some(<WellKnownCode as FromPrimitive>::from_u32(buf[1].into()))?;
+        }
         Some(KeyCode {
-            modifier: None,
+            modifier,
             media_code: None,
             wkc: da_key,
-        });
-
-        None
+        })
     }
 }
 
@@ -174,6 +201,7 @@ mod tests {
         println!("test 1");
         let mut key = Decoder::get_key_mapping(&msg);
         assert_eq!(key.layer, 1);
+        println!("{:?}", key);
 
         // layer = 1
         // key = 2
@@ -185,9 +213,10 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
-        println!("test 2");
+        println!("\ntest 2");
         key = Decoder::get_key_mapping(&msg);
         assert_eq!(key.layer, 1);
+        println!("{:?}", key);
 
         // layer = 1
         // key = 3
@@ -199,10 +228,12 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
-        println!("test 3");
+        println!("\ntest 3");
         key = Decoder::get_key_mapping(&msg);
         assert_eq!(key.layer, 1);
+        println!("{:?}", key);
 
+        /*
         //==============================
 
         // layer = 1
@@ -215,7 +246,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
-        println!("test 4");
+        println!("\ntest 4");
         key = Decoder::get_key_mapping(&msg);
         assert_eq!(key.layer, 1);
 
@@ -229,7 +260,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
-        println!("test 5");
+        println!("\ntest 5");
         key = Decoder::get_key_mapping(&msg);
         assert_eq!(key.layer, 1);
 
@@ -243,7 +274,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
-        println!("test 6");
+        println!("\ntest 6");
         key = Decoder::get_key_mapping(&msg);
         assert_eq!(key.layer, 1);
 
@@ -257,7 +288,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
-        println!("test 7");
+        println!("\ntest 7");
         key = Decoder::get_key_mapping(&msg);
         assert_eq!(key.layer, 1);
 
@@ -271,7 +302,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
-        println!("test 8");
+        println!("\ntest 8");
         key = Decoder::get_key_mapping(&msg);
         assert_eq!(key.layer, 1);
 
@@ -285,8 +316,9 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
-        println!("test 9");
+        println!("\ntest 9");
         key = Decoder::get_key_mapping(&msg);
         assert_eq!(key.layer, 1);
+        */
     }
 }

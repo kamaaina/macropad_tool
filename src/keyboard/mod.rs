@@ -9,7 +9,7 @@ use std::{fmt::Display, str::FromStr};
 use anyhow::{anyhow, ensure, Result};
 use enumset::{EnumSet, EnumSetType};
 use log::debug;
-use num_derive::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
 use rusb::{Context, DeviceHandle, Error::Timeout};
 use serde_with::DeserializeFromStr;
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
@@ -117,7 +117,9 @@ impl Key {
     }
 }
 
-#[derive(Debug, EnumSetType, EnumString, EnumIter, EnumMessage, Display)]
+#[derive(
+    Debug, ToPrimitive, FromPrimitive, EnumSetType, EnumString, EnumIter, EnumMessage, Display,
+)]
 #[strum(ascii_case_insensitive)]
 pub enum Modifier {
     #[strum(serialize = "ctrl")]
