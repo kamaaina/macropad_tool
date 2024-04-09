@@ -51,7 +51,7 @@ impl Config {
 }
 
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all="lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum Orientation {
     Normal,
     UpsideDown,
@@ -83,18 +83,25 @@ pub struct FlatLayer {
     pub knobs: Vec<Knob>,
 }
 
-fn reorient_grid<T: Clone>(orientation: Orientation, rows: usize, cols: usize, data: Vec<Vec<T>>) -> Vec<T> {
+fn reorient_grid<T: Clone>(
+    orientation: Orientation,
+    rows: usize,
+    cols: usize,
+    data: Vec<Vec<T>>,
+) -> Vec<T> {
     // Transforms physical button position to virtual.
     let tr = match orientation {
-        Orientation::Normal =>           |r, c, _rows, _cols| (r, c),
-        Orientation::UpsideDown =>       |r, c,  rows,  cols| (rows-r-1, cols-c-1),
-        Orientation::Clockwise =>        |r, c,  rows, _cols| (c, rows-r-1),
-        Orientation::CounterClockwise => |r, c, _rows,  cols| (cols-c-1, r),
+        Orientation::Normal => |r, c, _rows, _cols| (r, c),
+        Orientation::UpsideDown => |r, c, rows, cols| (rows - r - 1, cols - c - 1),
+        Orientation::Clockwise => |r, c, rows, _cols| (c, rows - r - 1),
+        Orientation::CounterClockwise => |r, c, _rows, cols| (cols - c - 1, r),
     };
-    (0..rows*cols).map(|i| {
-        let (r, c) = tr(i / cols, i % cols, rows, cols);
-        data[r][c].clone()
-    }).collect()
+    (0..rows * cols)
+        .map(|i| {
+            let (r, c) = tr(i / cols, i % cols, rows, cols);
+            data[r][c].clone()
+        })
+        .collect()
 }
 
 fn reorient_row<T>(orientation: Orientation, mut data: Vec<T>) -> Vec<T> {
@@ -121,7 +128,7 @@ mod tests {
     #[test]
     fn parse_example_config() -> anyhow::Result<()> {
         let mut path = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-        path.push("example-mapping.yaml");
+        path.push("mapping.yml");
         let file = std::fs::File::open(&path)?;
 
         // Load and validate mapping.
@@ -133,57 +140,59 @@ mod tests {
     #[test]
     fn test_reorient_grid() {
         assert_eq!(
-            reorient_grid(Orientation::Normal, 2, 3, vec![
-                vec![1, 2, 3],
-                vec![4, 5, 6],
-            ]),
+            reorient_grid(
+                Orientation::Normal,
+                2,
+                3,
+                vec![vec![1, 2, 3], vec![4, 5, 6],]
+            ),
             vec![1, 2, 3, 4, 5, 6],
         );
         assert_eq!(
-            reorient_grid(Orientation::UpsideDown, 2, 3, vec![
-                vec![1, 2, 3],
-                vec![4, 5, 6],
-            ]),
+            reorient_grid(
+                Orientation::UpsideDown,
+                2,
+                3,
+                vec![vec![1, 2, 3], vec![4, 5, 6],]
+            ),
             vec![6, 5, 4, 3, 2, 1],
         );
         assert_eq!(
-            reorient_grid(Orientation::Clockwise, 2, 3, vec![
-                vec![1, 2],
-                vec![3, 4],
-                vec![5, 6],
-            ]),
+            reorient_grid(
+                Orientation::Clockwise,
+                2,
+                3,
+                vec![vec![1, 2], vec![3, 4], vec![5, 6],]
+            ),
             vec![2, 4, 6, 1, 3, 5],
         );
         assert_eq!(
-            reorient_grid(Orientation::CounterClockwise, 2, 3, vec![
-                vec![1, 2],
-                vec![3, 4],
-                vec![5, 6],
-            ]),
+            reorient_grid(
+                Orientation::CounterClockwise,
+                2,
+                3,
+                vec![vec![1, 2], vec![3, 4], vec![5, 6],]
+            ),
             vec![5, 3, 1, 6, 4, 2],
         );
     }
 
     #[test]
-    #[should_panic(expected="can handle modifiers for first key in sequence only")]
+    #[should_panic(expected = "can handle modifiers for first key in sequence only")]
     fn test_limited_keyboard() {
         let config = Config {
             orientation: Orientation::Normal,
             rows: 1,
             columns: 3,
             knobs: 1,
-            layers: vec![
-                Layer {
-                    buttons: vec![
-                        vec![
-                            Some("a,alt-b".parse().unwrap()),
-                            None,
-                            None
-                        ],
-                    ],
-                    knobs: vec![Knob { ccw: None, press: None, cw: None }],
-                },
-            ],
+            layers: vec![Layer {
+                buttons: vec![vec![Some("a,alt-b".parse().unwrap()), None, None]],
+                knobs: vec![Knob {
+                    ccw: None,
+                    press: None,
+                    cw: None,
+                }],
+            }],
         };
         config.render().unwrap();
     }

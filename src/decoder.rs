@@ -1,4 +1,5 @@
 use crate::keyboard::{MediaCode, Modifier, Modifiers, WellKnownCode};
+use anyhow::{anyhow, Result};
 use num::FromPrimitive;
 
 pub struct Decoder {}
@@ -22,7 +23,7 @@ pub struct KeyMapping {
     pub delay: u16,
     pub layer: u8,
     pub key_number: u8,
-    pub keys: Vec<u8>,
+    pub keys: Vec<String>,
 }
 
 impl Decoder {
@@ -33,39 +34,51 @@ impl Decoder {
         }
     }
 
-    pub fn get_key_mapping(buf: &[u8]) -> KeyMapping {
-        let mut key_press: Vec<Option<KeyCode>> = Vec::new();
-        let _is_mouse = buf[10] & 0x04; // FIXME: implement
+    pub fn get_key_mapping(buf: &[u8]) -> Result<KeyMapping> {
+        if buf[1] != 0xfa {
+            return Err(anyhow!(
+                "Message does not appear to be a response from device"
+            ));
+        }
+
+        let mut key_press: Vec<String> = Vec::new();
         let mut i = 11;
+
+        // check for type of key in byte 4
+        // 0x01 - WellKnownKey
+        // 0x02 - Multimedia
+        // 0x03 - Mouse
+        let key_type = buf[4];
+
         loop {
             let val = Self::get_key(&[buf[i], buf[i + 1]]);
             if val.is_none() {
-                println!("val is None");
-                break; // short circuit
+                break;
             }
 
             // TODO: get the mapping
             let result = val.unwrap();
-            println!("==> {:?}", &result.modifier);
+            println!("modifier value: {:?}", &result.modifier);
             let mut key_str = Self::modifier_to_str(result.modifier);
             if result.wkc.is_some() {
+                println!("WKC!!!!");
                 key_str += "-";
                 key_str += &result.wkc.unwrap().to_string();
-                println!("### key string: {key_str}");
             }
-            //key_press.push(key_str);
+            println!("### key string: {key_str}");
+            key_press.push(key_str);
 
             i += 2;
             if i > 45 {
                 break; // end of mapping space in usb response
             }
         }
-        KeyMapping {
+        Ok(KeyMapping {
             delay: u16::from_be_bytes([buf[5], buf[6]]),
             layer: buf[3],
             key_number: buf[2],
-            keys: Vec::new(),
-        }
+            keys: key_press,
+        })
     }
 
     fn get_key(buf: &[u8]) -> Option<KeyCode> {
@@ -155,7 +168,7 @@ impl Decoder {
             }
         }
 
-        println!("modifier: {retval}");
+        //println!("modifier: {retval}");
         retval
     }
 }
@@ -230,6 +243,8 @@ mod tests {
 
     use crate::decoder::Decoder;
     use crate::keyboard::{Modifier, Modifiers};
+    use anyhow::Result;
+    use num::FromPrimitive;
 
     // cargo test -- --nocapture
 
@@ -237,6 +252,10 @@ mod tests {
     fn foo() {
         let x: Modifiers = Modifier::Alt | Modifier::Ctrl;
         println!("x: {}", x);
+        let val: u8 = 0xff;
+        let a = <Modifier as FromPrimitive>::from_u8(val);
+        println!("a: {a:?}");
+        assert_eq!(a, None);
     }
 
     #[test]
@@ -261,7 +280,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_key() {
+    fn decode_key() -> Result<()> {
         // layer = 1
         // key = 1
         // mapping = ctrl+a
@@ -273,9 +292,10 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         println!("test 1");
-        let mut key = Decoder::get_key_mapping(&msg);
+        let mut key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
+        assert_eq!(key.keys[0], "ctrl-a");
 
         // layer = 1
         // key = 2
@@ -288,9 +308,10 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         println!("\ntest 2");
-        key = Decoder::get_key_mapping(&msg);
+        key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
+        assert_eq!(key.keys[0], "shift-alt");
 
         // layer = 1
         // key = 3
@@ -303,9 +324,10 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         println!("\ntest 3");
-        key = Decoder::get_key_mapping(&msg);
+        key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
+        assert_eq!(key.keys[0], "ctrl-alt-b");
 
         /*
         //==============================
@@ -321,7 +343,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         println!("\ntest 4");
-        key = Decoder::get_key_mapping(&msg);
+        key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
 
         // layer = 1
@@ -335,7 +357,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         println!("\ntest 5");
-        key = Decoder::get_key_mapping(&msg);
+        key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
 
         // layer = 1
@@ -349,7 +371,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         println!("\ntest 6");
-        key = Decoder::get_key_mapping(&msg);
+        key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
 
         // layer = 1
@@ -363,7 +385,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         println!("\ntest 7");
-        key = Decoder::get_key_mapping(&msg);
+        key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
 
         // layer = 1
@@ -377,7 +399,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         println!("\ntest 8");
-        key = Decoder::get_key_mapping(&msg);
+        key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
 
         // layer = 1
@@ -391,8 +413,10 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         println!("\ntest 9");
-        key = Decoder::get_key_mapping(&msg);
+        key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
         */
+
+        Ok(())
     }
 }
