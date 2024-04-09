@@ -169,14 +169,13 @@ fn main() -> Result<()> {
                     let _ = decoder::Decoder::get_key_mapping(&buf);
                 }
             } else {
-                // all layers
-                let _ = keyboard.send(&messages::Messages::read_config(
-                    device_info.num_keys,
-                    device_info.num_encoders,
-                    *layer,
-                ));
                 // read keys for all layers
                 for i in 1..=consts::NUM_LAYERS {
+                    let _ = keyboard.send(&messages::Messages::read_config(
+                        device_info.num_keys,
+                        device_info.num_encoders,
+                        i,
+                    ));
                     info!("reading keys for layer {i}");
                     let data = messages::Messages::read_config(
                         device_info.num_keys,
