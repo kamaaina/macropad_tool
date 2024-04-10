@@ -12,7 +12,7 @@ pub struct Options {
     pub devel_options: DevelOptions,
 }
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 #[clap(hide(true), next_help_heading = "Internal options (use with caution)")]
 pub struct DevelOptions {
     #[arg(long, default_value_t=VENDOR_ID, value_parser=hex_or_decimal, hide=true)]

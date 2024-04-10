@@ -8,6 +8,7 @@ mod parse;
 
 use crate::config::Config;
 use crate::consts::PRODUCT_IDS;
+use crate::decoder::KeyMapping;
 use crate::keyboard::{
     k884x, k8880, Keyboard, KnobAction, MediaCode, Modifier, MouseAction, MouseButton,
     WellKnownCode,
@@ -124,6 +125,7 @@ fn main() -> Result<()> {
         }
 
         Command::Read { layer, mapping } => {
+            println!("dev options: {:?}", options.devel_options);
             let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
             let mut keyboard = open_keyboard(&options)?;
 
@@ -141,7 +143,10 @@ fn main() -> Result<()> {
                 device_info.num_keys, device_info.num_encoders
             );
 
-            // send message to get keys
+            // send message to get keys and process later so we don't slow the usb traffic
+            // not sure if that would be an issue as i don't know the usb protocol. mabye
+            // we could process here too??
+            let mut mappings: Vec<KeyMapping> = Vec::new();
             if *layer > 0 {
                 // specific layer
                 let _ = keyboard.send(&messages::Messages::read_config(
@@ -166,7 +171,7 @@ fn main() -> Result<()> {
                     }
                     debug!("bytes read: {bytes_read}");
                     debug!("data: {:02x?}", buf);
-                    let _ = decoder::Decoder::get_key_mapping(&buf);
+                    mappings.push(decoder::Decoder::get_key_mapping(&buf)?);
                 }
             } else {
                 // read keys for all layers
@@ -192,9 +197,14 @@ fn main() -> Result<()> {
                         }
                         debug!("bytes read: {bytes_read}");
                         debug!("data: {:02x?}", buf);
-                        let _ = decoder::Decoder::get_key_mapping(&buf);
+                        mappings.push(decoder::Decoder::get_key_mapping(&buf)?);
                     }
                 }
+            }
+
+            // process responses from device
+            for km in mappings {
+                println!("{:?}", km);
             }
 
             if mapping.is_empty() {
