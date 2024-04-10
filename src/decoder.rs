@@ -1,4 +1,4 @@
-use crate::keyboard::{MediaCode, Modifier, Modifiers, WellKnownCode};
+use crate::keyboard::{MediaCode, Modifier, Modifiers, MouseAction, WellKnownCode};
 use anyhow::{anyhow, Result};
 use num::FromPrimitive;
 
@@ -50,6 +50,63 @@ impl Decoder {
         // 0x03 - Mouse
         let key_type = buf[4];
 
+        // can we do this or should we check if bit 0 and bit 1 is set?
+        if buf[4] == 0x03 {
+            /*
+            let mut result: KeyCode;
+            let val = Self::get_key(&[buf[10], buf[11]]);
+            if val.is_some() {
+                result = val.unwrap();
+                println!("mouse modifier value: {:?}", &result.modifier);
+            }
+            let mut key_str = Self::modifier_to_str(result.modifier);
+            */
+
+            // mouse click
+            let mut click_type = String::new();
+            match buf[12] {
+                0x01 => click_type = "click".to_string(),
+                0x02 => click_type = "rclick".to_string(),
+                0x03 => click_type = "mclick".to_string(),
+                _ => {
+                    println!("Unknown - have not seen this case before")
+                }
+            }
+
+            // mouse wheel status
+            let mut key_str = click_type;
+            match buf[15] {
+                0x01 => {
+                    if key_str.len() > 0 {
+                        key_str += "-";
+                    }
+                    key_str = "wheelup".to_string();
+                }
+                0xFF => {
+                    if key_str.len() > 0 {
+                        key_str += "-";
+                    }
+                    key_str = "wheeldown".to_string();
+                }
+                _ => {
+                    println!("Unknown - have not seen this case before")
+                }
+            }
+            key_press.push(key_str);
+
+            // TODO: is it possible to make a binding like wheelup-a? doesn't make much sense
+            //       but might need to add support for that. currently, not supported
+
+            // FIXME: add support for modifier key
+
+            return Ok(KeyMapping {
+                delay: u16::from_be_bytes([buf[5], buf[6]]),
+                layer: buf[3],
+                key_number: buf[2],
+                keys: key_press,
+            });
+        }
+
         loop {
             let val = Self::get_key(&[buf[i], buf[i + 1]]);
             if val.is_none() {
@@ -90,11 +147,12 @@ impl Decoder {
             return None;
         }
 
-        // get the key/mouse combination
+        // get the key combination
         let mut da_key = None;
         if buf[1] > 0 {
             da_key = Some(<WellKnownCode as FromPrimitive>::from_u32(buf[1].into()))?;
         }
+
         Some(KeyCode {
             modifier: buf[0],
             media_code: None,
@@ -179,26 +237,6 @@ impl Decoder {
 
 // macropad device probe response - 6 button 1 encoder
 // 03fb060100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-
-// layer 1
-// key 1 = ctrl+a
-// 03fa010101000000000001010400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 2 = alt+shift
-// 03fa020101000000000001060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 3 = ctrl+alt+b
-// 03fa030101000000000002050001050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 4 = null
-// 03fa040101000000000001006400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 5 = k
-// 03fa050101000000000001000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 6 = l
-// 03fa060101000000000001000f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 16 = mouse wheel +
-// 03fa100103000000000004000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 17 = mouse left click
-// 03fa110103000000000004000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 18 = mouse wheel -
-// 03fa12010300000000000400000000ff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 // layer 2
 // key 16 = left arrow
@@ -370,7 +408,6 @@ mod tests {
         assert_eq!(key.keys[0], "ctrl-alt-k");
         assert_eq!(key.keys[1], "ctrl-alt-a");
 
-        /*
         // layer = 1
         // key = 6
         // mapping = l
@@ -385,6 +422,7 @@ mod tests {
         key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
+        assert_eq!(key.keys[0], "l");
 
         // layer = 1
         // key = 16
@@ -400,6 +438,7 @@ mod tests {
         key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
+        assert_eq!(key.keys[0], "wheelup");
 
         // layer = 1
         // key = 16
@@ -415,6 +454,7 @@ mod tests {
         key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
+        assert_eq!(key.keys[0], "click");
 
         // layer = 1
         // key = 16
@@ -430,7 +470,7 @@ mod tests {
         key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
-        */
+        assert_eq!(key.keys[0], "wheeldown");
 
         Ok(())
     }
