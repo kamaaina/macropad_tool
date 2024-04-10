@@ -5,6 +5,7 @@ mod keyboard;
 mod messages;
 mod options;
 mod parse;
+mod printer;
 
 use crate::config::Config;
 use crate::consts::PRODUCT_IDS;
@@ -113,8 +114,8 @@ fn main() -> Result<()> {
                         )?;
                     }
                 }
+                let _ = keyboard.send(&Messages::end_program());
             }
-            let _ = keyboard.send(&Messages::end_program());
 
             println!("デバイスのプログラミングが完了しました");
         }
@@ -124,7 +125,7 @@ fn main() -> Result<()> {
             keyboard.set_led(*index)?;
         }
 
-        Command::Read { layer, mapping } => {
+        Command::Read { layer } => {
             println!("dev options: {:?}", options.devel_options);
             let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
             let mut keyboard = open_keyboard(&options)?;
@@ -205,14 +206,6 @@ fn main() -> Result<()> {
             // process responses from device
             for km in mappings {
                 println!("{:?}", km);
-            }
-
-            if mapping.is_empty() {
-                // FIXME: write configuration to stdout
-                info!("write configuration to stdout");
-            } else {
-                // FIXME: write to file in yaml format
-                info!("write configuration to file: {mapping}");
             }
         }
     }

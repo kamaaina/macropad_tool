@@ -4,12 +4,9 @@ use num::FromPrimitive;
 
 pub struct Decoder {}
 
-struct KeyCode {
-    #[allow(unused)]
+pub struct KeyCode {
     modifier: u8,
-    #[allow(unused)]
     media_code: Option<MediaCode>,
-    #[allow(unused)]
     wkc: Option<WellKnownCode>,
 }
 

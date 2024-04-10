@@ -20,7 +20,7 @@ impl Keyboard for Keyboard884x {
 
         let mut msg = vec![
             0x03,
-            0xfe,
+            0xfd,
             key.to_key_id_16()?,
             layer + 1,
             expansion.kind(),

@@ -65,10 +65,6 @@ pub enum Command {
         /// Layer to read data for (layer is one based; 0 reads all layers)
         #[clap(short, long, default_value_t = 0)]
         layer: u8,
-
-        /// Output mapping as yml file
-        #[clap(short, long, default_value = "")]
-        mapping: String,
     },
 
     /// Select LED backlight mode
