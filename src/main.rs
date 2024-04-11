@@ -338,10 +338,7 @@ fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
     // Find USB device based on the product id
     let (device, desc, id_product) = find_device(
         options.devel_options.vendor_id,
-        options
-            .devel_options
-            .product_id
-            .expect("expected product id"),
+        options.devel_options.product_id,
     )
     .context("find USB device")?;
 

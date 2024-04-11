@@ -1,6 +1,7 @@
 use crate::consts::VENDOR_ID;
 use crate::parse;
 use clap::{Args, Parser, Subcommand};
+use std::fmt::Display;
 use std::num::ParseIntError;
 
 #[derive(Parser)]
@@ -13,13 +14,16 @@ pub struct Options {
 }
 
 #[derive(Args, Debug)]
-#[clap(hide(true), next_help_heading = "Internal options (use with caution)")]
+#[clap(
+    hide(true),
+    next_help_heading = "Development options (use with caution!)"
+)]
 pub struct DevelOptions {
     #[arg(long, default_value_t=VENDOR_ID, value_parser=hex_or_decimal, hide=true)]
     pub vendor_id: u16,
 
-    #[arg(long, value_parser=hex_or_decimal, hide=true)]
-    pub product_id: Option<u16>,
+    #[arg(long, value_parser=hex_or_decimal, default_value_t=0x8840, hide=true)]
+    pub product_id: u16,
 
     #[arg(long, value_parser=parse_address, hide=true)]
     pub address: Option<(u8, u8)>,
