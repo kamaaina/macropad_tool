@@ -1,6 +1,30 @@
 #+title: Readme
 
+* Contents :toc:
+- [[#project-description][Project Description]]
+  - [[#note][Note]]
+- [[#supported-boards][Supported Boards]]
+- [[#installation][Installation]]
+- [[#usage][Usage]]
+  - [[#udev-rules-for-linux][udev rules for linux]]
+  - [[#validate-configuration][Validate configuration]]
+  - [[#write-to-keyboard][Write to keyboard]]
+- [[#windows][Windows]]
+  - [[#compiling][Compiling]]
+  - [[#running-the-application][Running the Application]]
+- [[#listing-usb-devices][Listing USB devices]]
+  - [[#mac][Mac]]
+  - [[#linux][Linux]]
+  - [[#windows-1][Windows]]
+- [[#monitoring-generated-keyboard-and-mouse-events][Monitoring generated keyboard and mouse events]]
+- [[#photos][Photos]]
+
 * Project Description
+
+** Note
+This started as a fun project to learn a bit more about rust and USB. It is a hobby project and changes/features are implemented
+as my free time permits. Please use caution before using this software as I assume no responsibility if it does not work or
+causes problems with your device.
 
 This is an utility for programming small keyboards like this one:
 
@@ -16,17 +40,23 @@ download a windows exe file from a google drive account to program it. It also a
 
 There are many revs of this macropad with different number of
 buttons and rotary encoder ([see some photos](#photos))
-- with/without Bluetooth
-- with/without WiFi
 
 * Supported Boards
 Tool has been reported to work with:
- - 3×4 with 2 rotary encoders (Bluetooth version)
- - 3×3 with 2 rotary encoders
- - 3x2 with 1 rotary encoder (the one I have)
+ - 3×4 with 2 rotary encoders
+ - 3×3 with 2 rotary encoders (the one I have)
+ - 3x2 with 1 rotary encoder  (the one I have)
  - 3x1 with 1 rotary encoder
 
 All these keyboards share same vendor/product IDs: 1189:8840
+
+* Installation
+Clone the repository and build the tool
+
+#+begin_example
+cargo build --release
+#+end_example
+
 
 * Usage
 ** udev rules for linux
@@ -53,15 +83,10 @@ macropad-tool program < your-config.yml
 
 * Windows
 ** Compiling
-- Need to install WinLib to build https://winlibs.com. If you have chocolatey installed, just run
-
-  #+begin_example
-  choco install winlibs
-  #+end_example
+Installing rust with the installer prompts to install visual studio community edition (which is free) and is sufficient to build the executable
 
 ** Running the Application
-- You will need to install the USB Development Kit to be able to talk to
-the macropad. https://github.com/daynix/UsbDk/releases
+- You will need to install the USB Development Kit to be able to talk to the macropad. https://github.com/daynix/UsbDk/releases
 
 * Listing USB devices
 
@@ -75,6 +100,9 @@ system_profiler SPUSBDataType
 #+begin_example
 lsusb -v
 #+end_example
+
+** Windows
+Use device manager and check the Hardware ID
 
 * Monitoring generated keyboard and mouse events
 

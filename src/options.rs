@@ -1,7 +1,6 @@
 use crate::consts::VENDOR_ID;
 use crate::parse;
 use clap::{Args, Parser, Subcommand};
-use std::fmt::Display;
 use std::num::ParseIntError;
 
 #[derive(Parser)]
