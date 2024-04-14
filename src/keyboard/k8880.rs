@@ -2,7 +2,7 @@ use anyhow::{ensure, Result};
 use log::debug;
 use rusb::{Context, DeviceHandle};
 
-use super::{Key, Keyboard, Macro, MouseAction, MouseEvent};
+use super::{Key, Keyboard, LedColor, Macro, MouseAction, MouseEvent};
 
 pub struct Keyboard8880 {
     handle: DeviceHandle<Context>,
@@ -104,7 +104,7 @@ impl Keyboard for Keyboard8880 {
         Ok(())
     }
 
-    fn set_led(&mut self, n: u8) -> Result<()> {
+    fn set_led(&mut self, n: u8, _color: LedColor) -> Result<()> {
         self.send(&[0xa1, 0x01, 0, 0, 0, 0, 0, 0])?;
         self.send(&[0xb0, 0x18, n, 0, 0, 0, 0, 0])?;
         self.send(&[0xaa, 0xa1, 0, 0, 0, 0, 0, 0])?;

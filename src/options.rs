@@ -1,4 +1,5 @@
 use crate::consts::VENDOR_ID;
+use crate::keyboard::LedColor;
 use crate::parse;
 use clap::{Args, Parser, Subcommand};
 use std::num::ParseIntError;
@@ -54,7 +55,6 @@ fn parse_address(s: &str) -> std::result::Result<(u8, u8), nom::error::Error<Str
 #[derive(Subcommand)]
 pub enum Command {
     /// Show supported keys and modifiers
-    #[clap(hide = true)]
     ShowKeys,
 
     /// Validate key mappings config on stdin
@@ -71,12 +71,22 @@ pub enum Command {
     },
 
     /// Select LED backlight mode
-    #[clap(hide = true)]
     Led(LedCommand),
 }
 
-#[derive(Parser)]
+#[derive(Parser, Clone, Default, Debug)]
 pub struct LedCommand {
-    /// Index of LED mode (zero-based)
+    /// Index of LED mode (0-5 inclusive)
+    /// 0 - LEDs off
+    /// 1 - backlight always on with LedColor
+    /// 2 - no backlight, shock with LedColor when key pressed
+    /// 3 - no backlight, shock2 when LedColor when key pressed
+    /// 4 - no backlight, light up key with LedColor when pressed
+    /// 5 - backlight white always on
+    #[clap(verbatim_doc_comment)]
     pub index: u8,
+
+    /// Color to apply with mode
+    #[arg(value_enum)]
+    pub led_color: LedColor,
 }

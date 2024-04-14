@@ -120,9 +120,10 @@ fn main() -> Result<()> {
             println!("デバイスのプログラミングが完了しました");
         }
 
-        Command::Led(LedCommand { index }) => {
+        Command::Led(LedCommand { index, led_color }) => {
             let mut keyboard = open_keyboard(&options)?;
-            keyboard.set_led(*index)?;
+            keyboard.set_led(*index, *led_color)?;
+            let _ = keyboard.send(&Messages::end_program());
         }
 
         Command::Read { layer } => {

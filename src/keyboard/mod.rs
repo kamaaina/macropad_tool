@@ -18,7 +18,7 @@ use itertools::Itertools as _;
 
 pub trait Keyboard {
     fn bind_key(&mut self, layer: u8, key: Key, expansion: &Macro) -> Result<()>;
-    fn set_led(&mut self, n: u8) -> Result<()>;
+    fn set_led(&mut self, n: u8, color: LedColor) -> Result<()>;
 
     fn get_handle(&self) -> &DeviceHandle<Context>;
     fn get_out_endpoint(&self) -> u8;
@@ -68,6 +68,18 @@ pub trait Keyboard {
 
         Ok(bytes_read)
     }
+}
+
+#[derive(Debug, Default, ToPrimitive, Clone, Copy, Display, clap::ValueEnum)]
+pub enum LedColor {
+    Red = 0x10,
+    Orange = 0x20,
+    Yellow = 0x30,
+    Green = 0x40,
+    #[default]
+    Cyan = 0x50,
+    Blue = 0x60,
+    Purple = 0x70,
 }
 
 #[allow(unused)]

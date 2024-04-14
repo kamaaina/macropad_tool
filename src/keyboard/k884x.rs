@@ -2,9 +2,9 @@ use anyhow::{ensure, Result};
 use log::debug;
 use rusb::{Context, DeviceHandle};
 
-use crate::consts;
+use crate::{consts, messages};
 
-use super::{Key, Keyboard, Macro, MouseAction, MouseEvent};
+use super::{Key, Keyboard, LedColor, Macro, MouseAction, MouseEvent};
 
 pub struct Keyboard884x {
     handle: DeviceHandle<Context>,
@@ -71,11 +71,9 @@ impl Keyboard for Keyboard884x {
         Ok(())
     }
 
-    fn set_led(&mut self, _n: u8) -> Result<()> {
-        unimplemented!(
-            "If you have a device which supports backlight LEDs, please let us know so \
-                        we can help you reverse-engineer it."
-        )
+    fn set_led(&mut self, n: u8, color: LedColor) -> Result<()> {
+        self.send(&messages::Messages::program_led(n, color))?;
+        Ok(())
     }
 
     fn get_handle(&self) -> &DeviceHandle<Context> {
