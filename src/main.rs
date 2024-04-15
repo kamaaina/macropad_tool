@@ -2,6 +2,7 @@ mod config;
 mod consts;
 mod decoder;
 mod keyboard;
+mod mapping;
 mod messages;
 mod options;
 mod parse;
