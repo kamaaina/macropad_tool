@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Error};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -57,10 +58,14 @@ fn print(config: Macropad) {
     println!("{s}");
 }
 
+fn validate(config: Macropad) -> anyhow::Result<()> {
+    Err(anyhow!("failed because"))
+}
+
 #[cfg(test)]
 mod tests {
 
-    use crate::mapping::{print, read};
+    use crate::mapping::{print, read, validate};
 
     #[test]
     fn mapping_read() {
@@ -70,5 +75,11 @@ mod tests {
     #[test]
     fn mapping_print() {
         print(read());
+    }
+
+    #[test]
+    fn mapping_validate() -> anyhow::Result<()> {
+        validate(read())?;
+        Ok(())
     }
 }
