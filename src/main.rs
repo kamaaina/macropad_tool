@@ -6,7 +6,6 @@ mod mapping;
 mod messages;
 mod options;
 mod parse;
-mod printer;
 
 use crate::config::Config;
 use crate::consts::PRODUCT_IDS;
