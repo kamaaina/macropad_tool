@@ -67,15 +67,19 @@ fn main() -> Result<()> {
             }
         }
 
-        Command::Validate => {
+        Command::Validate { config_file } => {
             // Load and validate mapping.
+            /*
             let config: Config =
                 serde_yaml::from_reader(std::io::stdin().lock()).context("load mapping config")?;
             let _ = config.render().context("render mappings config")?;
+            */
+            debug!("validating: {config_file}");
+            Mapping::validate(config_file)?;
             println!("config is valid 👌")
         }
 
-        Command::Program => {
+        Command::Program { config_file } => {
             // Load and validate mapping.
             let config: Config =
                 serde_yaml::from_reader(std::io::stdin().lock()).context("load mapping config")?;
@@ -116,7 +120,7 @@ fn main() -> Result<()> {
                         )?;
                     }
                 }
-                let _ = keyboard.send(&Messages::end_program());
+                keyboard.send(&Messages::end_program())?;
             }
 
             println!("デバイスのプログラミングが完了しました");
@@ -125,7 +129,7 @@ fn main() -> Result<()> {
         Command::Led(LedCommand { index, led_color }) => {
             let mut keyboard = open_keyboard(&options)?;
             keyboard.set_led(*index, *led_color)?;
-            let _ = keyboard.send(&Messages::end_program());
+            keyboard.send(&Messages::end_program())?;
         }
 
         Command::Read { layer } => {
@@ -134,8 +138,8 @@ fn main() -> Result<()> {
             let mut keyboard = open_keyboard(&options)?;
 
             // get the type of device
-            let _ = keyboard.send(&messages::Messages::device_type());
-            let _ = keyboard.recieve(&mut buf);
+            keyboard.send(&messages::Messages::device_type())?;
+            keyboard.recieve(&mut buf)?;
             let device_info = decoder::Decoder::get_device_info(&buf);
             info!(
                 "OUT: 0x{:02x} IN: 0x{:02x}",
@@ -153,11 +157,11 @@ fn main() -> Result<()> {
             let mut mappings: Vec<KeyMapping> = Vec::new();
             if *layer > 0 {
                 // specific layer
-                let _ = keyboard.send(&messages::Messages::read_config(
+                keyboard.send(&messages::Messages::read_config(
                     device_info.num_keys,
                     device_info.num_encoders,
                     *layer,
-                ));
+                ))?;
                 // read keys for specified layer
                 info!("reading keys for layer {}", layer);
                 let data = messages::Messages::read_config(
@@ -165,7 +169,7 @@ fn main() -> Result<()> {
                     device_info.num_encoders,
                     *layer,
                 );
-                let _ = keyboard.send(&data);
+                keyboard.send(&data)?;
 
                 // read all messages from device
                 loop {
@@ -180,18 +184,18 @@ fn main() -> Result<()> {
             } else {
                 // read keys for all layers
                 for i in 1..=consts::NUM_LAYERS {
-                    let _ = keyboard.send(&messages::Messages::read_config(
+                    keyboard.send(&messages::Messages::read_config(
                         device_info.num_keys,
                         device_info.num_encoders,
                         i,
-                    ));
+                    ))?;
                     info!("reading keys for layer {i}");
                     let data = messages::Messages::read_config(
                         device_info.num_keys,
                         device_info.num_encoders,
                         i,
                     );
-                    let _ = keyboard.send(&data);
+                    keyboard.send(&data)?;
 
                     // read all messages from device
                     loop {
@@ -215,52 +219,6 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-
-/*
-fn find_and_init(options: &Options) -> Result<DeviceHandle<Context>> {
-    // find USB device based on the product id
-    let (device, _desc, _id_product) = find_device(
-        options.devel_options.vendor_id,
-        options
-            .devel_options
-            .product_id
-            .expect("expected product id"),
-    )
-    .context("find USB device")?;
-
-    // find correct endpoints; we need both IN and OUT
-    let (intf_num, endpt_addr_out, endpt_addr_in) = find_interface_and_endpoint(
-        &device,
-        None,
-        options.devel_options.out_endpoint_address,
-        options.devel_options.in_endpoint_address,
-    )?;
-    info!(
-        "found interface number: {intf_num}, OUT endpoint: 0x{:02x}, and IN endpoint: 0x{:02x}",
-        endpt_addr_out, endpt_addr_in
-    );
-
-    // open device
-    let mut handle = device.open().context("open USB device")?;
-    let _ = handle.set_auto_detach_kernel_driver(true);
-    handle
-        .claim_interface(intf_num)
-        .context("claim interface")?;
-
-    let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
-
-    // probe device to see what type of macropad we have
-    let mp_type = messages::Messages::device_type();
-    let _ = handle.write_interrupt(endpt_addr_out, &mp_type, consts::TIMEOUT);
-    let _ = reader::Reader::read_device_msg(
-        options.devel_options.in_endpoint_address,
-        &handle,
-        &mut buf,
-    );
-
-    Ok(handle)
-}
-*/
 
 pub fn find_interface_and_endpoint(
     device: &Device<Context>,
@@ -360,7 +318,7 @@ fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
 
     // Open device.
     let mut handle = device.open().context("open USB device")?;
-    let _ = handle.set_auto_detach_kernel_driver(true);
+    handle.set_auto_detach_kernel_driver(true)?;
     handle
         .claim_interface(intf_num)
         .context("claim interface")?;
@@ -396,13 +354,6 @@ pub fn find_device(vid: u16, pid: u16) -> Result<(Device<Context>, DeviceDescrip
         if desc.vendor_id() == vid && PRODUCT_IDS.contains(&pid) {
             found.push((device, desc, product_id));
         }
-
-        /*
-        // FIXME: add support for other product id's
-        if desc.vendor_id() == vid && desc.product_id() == pid {
-            found.push((device, desc, product_id));
-        }
-        */
     }
 
     match found.len() {

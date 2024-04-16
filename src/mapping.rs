@@ -1,4 +1,5 @@
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, Result};
+use log::debug;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -40,10 +41,8 @@ use crate::keyboard::{MediaCode, Modifier, WellKnownCode};
 pub struct Mapping {}
 
 impl Mapping {
-    pub fn read() -> Macropad {
-        // read configuration
-        let cfg_file = "./mapping.ron";
-        println!("configuration file: {}", cfg_file);
+    pub fn read(cfg_file: &str) -> Macropad {
+        debug!("configuration file: {}", cfg_file);
         let f = File::open(cfg_file).expect("Failed opening file");
         let config: Macropad = match from_reader(f) {
             Ok(x) => x,
@@ -66,9 +65,9 @@ impl Mapping {
         println!("{s}");
     }
 
-    pub fn validate() -> anyhow::Result<()> {
+    pub fn validate(cfg_file: &str) -> anyhow::Result<()> {
         // check layers
-        let cfg = Self::read();
+        let cfg = Self::read(cfg_file);
 
         // check orientation
         Orientation::from_str(&Self::uppercase_first(&cfg.device.orientation))?;
@@ -103,13 +102,8 @@ impl Mapping {
 
                 // check the individual button
                 for (k, btn) in btn_mapping.iter().enumerate() {
-                    if Self::validate_key_mapping(btn.to_string()).is_err() {
-                        return Err(anyhow!(
-                            "error at layer {} row {} button {}",
-                            i + 1,
-                            j + 1,
-                            k + 1
-                        ));
+                    if Self::validate_key_mapping(btn).is_err() {
+                        return Err(anyhow!("at layer {} row {} button {}", i + 1, j + 1, k + 1));
                     }
                 }
             }
@@ -123,12 +117,25 @@ impl Mapping {
                     layer.knobs.len(),
                 ));
             }
+
+            // knob button mapping
+            for (k, knob) in layer.knobs.iter().enumerate() {
+                if Self::validate_key_mapping(&knob.ccw).is_err() {
+                    return Err(anyhow!("at layer {} knob {} in ccw", i + 1, k + 1));
+                }
+                if Self::validate_key_mapping(&knob.click).is_err() {
+                    return Err(anyhow!("at layer {} knob {} in click", i + 1, k + 1));
+                }
+                if Self::validate_key_mapping(&knob.cw).is_err() {
+                    return Err(anyhow!("at layer {} knob {} in cw", i + 1, k + 1));
+                }
+            }
         }
 
         Ok(())
     }
 
-    fn validate_key_mapping(key: String) -> Result<()> {
+    fn validate_key_mapping(key: &String) -> Result<()> {
         // ensure we don't go over max
         let keys: Vec<_> = key.split(',').collect();
         if keys.len() > consts::MAX_KEY_PRESSES {
@@ -218,17 +225,17 @@ mod tests {
 
     #[test]
     fn mapping_read() {
-        Mapping::read();
+        Mapping::read("./mapping.ron");
     }
 
     #[test]
     fn mapping_print() {
-        Mapping::print(Mapping::read());
+        Mapping::print(Mapping::read("./mapping.ron"));
     }
 
     #[test]
     fn mapping_validate() -> anyhow::Result<()> {
-        Mapping::validate()?;
+        Mapping::validate("./mapping.ron")?;
         Ok(())
     }
 }

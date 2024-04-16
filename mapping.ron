@@ -46,14 +46,14 @@ Macropad(
     ),
     (
         buttons: [
-            ["3", "3", "3", "3"],
-            ["3", "3", "3", "3"],
-            ["3", "3", "3", "3"],
+            ["ctrl-m", "ctrl-slash", "space", "p"],
+            ["ctrl-rightbracket", "ctrl-leftbracket", "right", "left"],
+            ["play", "volumeup", "volumedown", "3"],
         ],
         knobs: [
             (
                 ccw: "3",
-                click: "3",
+                click: "mute",
                 cw: "3"
             ),
             (
