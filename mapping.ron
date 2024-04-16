@@ -15,12 +15,12 @@ Macropad(
         knobs: [
             (
                 ccw: "volumedown",
-                click: "mute",
+                press: "mute",
                 cw: "volumeup"
             ),
             (
                 ccw: "1",
-                click: "2",
+                press: "2",
                 cw: "3"
             ),
         ],
@@ -34,12 +34,12 @@ Macropad(
         knobs: [
             (
                 ccw: "2",
-                click: "2",
+                press: "2",
                 cw: "2"
             ),
             (
                 ccw: "2",
-                click: "2",
+                press: "2",
                 cw: "2"
             ),
         ],
@@ -53,12 +53,12 @@ Macropad(
         knobs: [
             (
                 ccw: "3",
-                click: "mute",
+                press: "mute",
                 cw: "3"
             ),
             (
                 ccw: "3",
-                click: "3",
+                press: "3",
                 cw: "3"
             ),
         ],

@@ -68,14 +68,8 @@ fn main() -> Result<()> {
         }
 
         Command::Validate { config_file } => {
-            // Load and validate mapping.
-            /*
-            let config: Config =
-                serde_yaml::from_reader(std::io::stdin().lock()).context("load mapping config")?;
-            let _ = config.render().context("render mappings config")?;
-            */
-            debug!("validating: {config_file}");
-            Mapping::validate(config_file)?;
+            // load and validate mapping
+            Mapping::validate(config_file).context("validating configuration file")?;
             println!("config is valid 👌")
         }
 
@@ -84,6 +78,9 @@ fn main() -> Result<()> {
             let config: Config =
                 serde_yaml::from_reader(std::io::stdin().lock()).context("load mapping config")?;
             let layers = config.render().context("render mapping config")?;
+
+            Mapping::validate(config_file)?;
+            let config2 = Mapping::read(config_file);
 
             let mut keyboard = open_keyboard(&options)?;
 

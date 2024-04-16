@@ -25,7 +25,7 @@ pub struct Layer {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Knob {
     pub ccw: String,
-    pub click: String,
+    pub press: String,
     pub cw: String,
 }
 
@@ -103,7 +103,13 @@ impl Mapping {
                 // check the individual button
                 for (k, btn) in btn_mapping.iter().enumerate() {
                     if Self::validate_key_mapping(btn).is_err() {
-                        return Err(anyhow!("at layer {} row {} button {}", i + 1, j + 1, k + 1));
+                        return Err(anyhow!(
+                            "unknown key '{}' at layer {} row {} button {}",
+                            btn,
+                            i + 1,
+                            j + 1,
+                            k + 1
+                        ));
                     }
                 }
             }
@@ -121,13 +127,28 @@ impl Mapping {
             // knob button mapping
             for (k, knob) in layer.knobs.iter().enumerate() {
                 if Self::validate_key_mapping(&knob.ccw).is_err() {
-                    return Err(anyhow!("at layer {} knob {} in ccw", i + 1, k + 1));
+                    return Err(anyhow!(
+                        "unknown key '{}' at layer {} knob {} in ccw",
+                        &knob.ccw,
+                        i + 1,
+                        k + 1
+                    ));
                 }
-                if Self::validate_key_mapping(&knob.click).is_err() {
-                    return Err(anyhow!("at layer {} knob {} in click", i + 1, k + 1));
+                if Self::validate_key_mapping(&knob.press).is_err() {
+                    return Err(anyhow!(
+                        "unknown key '{}' at layer {} knob {} in press",
+                        &knob.press,
+                        i + 1,
+                        k + 1
+                    ));
                 }
                 if Self::validate_key_mapping(&knob.cw).is_err() {
-                    return Err(anyhow!("at layer {} knob {} in cw", i + 1, k + 1));
+                    return Err(anyhow!(
+                        "unknown key '{}' at layer {} knob {} in cw",
+                        &knob.cw,
+                        i + 1,
+                        k + 1
+                    ));
                 }
             }
         }
