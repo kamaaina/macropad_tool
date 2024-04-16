@@ -1,5 +1,6 @@
 use anyhow::{bail, ensure, Result};
 use serde::Deserialize;
+use strum_macros::EnumString;
 
 use crate::keyboard::Macro;
 
@@ -50,7 +51,7 @@ impl Config {
     }
 }
 
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, EnumString, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Orientation {
     Normal,

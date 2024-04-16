@@ -8,8 +8,8 @@ Macropad(
     layers: [
     (
         buttons: [
-            ["a", "b", "c", "d"],
-            ["e", "f", "g", "h"],
+            ["ctrl-a,ctrl-s", "b", "c", "d"],
+            ["e", "f", "g", "h" ],
             ["i", "j", "k", "l"],
         ],
         knobs: [

@@ -23,6 +23,7 @@ use anyhow::{anyhow, ensure, Result};
 use indoc::indoc;
 use itertools::Itertools;
 use log::{debug, info};
+use mapping::Mapping;
 use rusb::{Context, Device, DeviceDescriptor, Direction, TransferType};
 
 use anyhow::Context as _;
