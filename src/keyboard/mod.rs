@@ -18,6 +18,7 @@ use itertools::Itertools as _;
 
 pub trait Keyboard {
     fn bind_key(&mut self, layer: u8, key: Key, expansion: &Macro) -> Result<()>;
+    fn map_key(&mut self, layer: u8, key_num: u8, key: String) -> Result<()>;
     fn set_led(&mut self, n: u8, color: LedColor) -> Result<()>;
 
     fn get_handle(&self) -> &DeviceHandle<Context>;

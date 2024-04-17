@@ -73,13 +73,42 @@ fn main() -> Result<()> {
         }
 
         Command::Program { config_file } => {
-            // Load and validate mapping.
+            // load and validate mapping
+            Mapping::validate(config_file)?;
+            let config = Mapping::read(config_file);
+            let mut keyboard = open_keyboard(&options)?;
+
+            for (i, layer) in config.layers.iter().enumerate() {
+                let mut j = 1;
+                for row in &layer.buttons {
+                    for btn in row {
+                        keyboard.map_key((i + 1).try_into()?, j, btn.to_string())?;
+                        println!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, j);
+                        j += 1;
+                    }
+                }
+
+                // TODO: test 9x3 to see if the 3 knobs are top to bottom with key number
+                j = 0x10;
+                for knob in &layer.knobs {
+                    println!("layer: {} key: 0x{:02x} knob cw {}", i + 1, j, knob.cw);
+                    j += 1;
+                    println!(
+                        "layer: {} key: 0x{:02x} knob press {}",
+                        i + 1,
+                        j,
+                        knob.press
+                    );
+                    j += 1;
+                    println!("layer: {} key: 0x{:02x} knob ccw {}", i + 1, j, knob.ccw);
+                    j += 1;
+                }
+            }
+
+            /*
             let config: Config =
                 serde_yaml::from_reader(std::io::stdin().lock()).context("load mapping config")?;
             let layers = config.render().context("render mapping config")?;
-
-            Mapping::validate(config_file)?;
-            let config2 = Mapping::read(config_file);
 
             let mut keyboard = open_keyboard(&options)?;
 
@@ -118,6 +147,7 @@ fn main() -> Result<()> {
                 }
                 let _ = keyboard.send(&Messages::end_program());
             }
+            */
 
             println!("デバイスのプログラミングが完了しました");
         }

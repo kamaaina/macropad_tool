@@ -1,67 +1,43 @@
-Macropad(
+(
     device: (
         orientation: "normal",
         rows: 3,
         cols: 4,
-        knobs: 2
+        knobs: 2,
     ),
     layers: [
-    (
-        buttons: [
-            ["ctrl-a,ctrl-s", "b", "c", "d"],
-            ["e", "f", "g", "h" ],
-            ["i", "j", "k", "l"],
-        ],
-        knobs: [
-            (
-                ccw: "volumedown",
-                press: "mute",
-                cw: "volumeup"
-            ),
-            (
-                ccw: "1",
-                press: "2",
-                cw: "3"
-            ),
-        ],
-    ),
-    (
-        buttons: [
-            ["2", "2", "2", "2"],
-            ["2", "2", "2", "2"],
-            ["2", "2", "2", "2"],
-        ],
-        knobs: [
-            (
-                ccw: "2",
-                press: "2",
-                cw: "2"
-            ),
-            (
-                ccw: "2",
-                press: "2",
-                cw: "2"
-            ),
-        ],
-    ),
-    (
-        buttons: [
-            ["ctrl-m", "ctrl-slash", "space", "p"],
-            ["ctrl-rightbracket", "ctrl-leftbracket", "right", "left"],
-            ["play", "volumeup", "volumedown", "3"],
-        ],
-        knobs: [
-            (
-                ccw: "3",
-                press: "mute",
-                cw: "3"
-            ),
-            (
-                ccw: "3",
-                press: "3",
-                cw: "3"
-            ),
-        ],
-    ),
+        (
+            buttons: [
+                ["ctrl-a,ctrl-s", "b", "c", "d"],
+                ["e", "f", "g", "h"],
+                ["i", "j", "k", "l"],
+            ],
+            knobs: [
+                (ccw: "volumedown", press: "mute", cw: "volumeup"),
+                (ccw: "1", press: "2", cw: "3"),
+            ],
+        ),
+        (
+            buttons: [
+                ["2", "2", "2", "2"],
+                ["2", "2", "2", "2"],
+                ["2", "2", "2", "2"],
+            ],
+            knobs: [
+                (ccw: "2", press: "2", cw: "2"),
+                (ccw: "2", press: "2", cw: "2"),
+            ],
+        ),
+        (
+            buttons: [
+                ["ctrl-m", "ctrl-slash", "space", "p"],
+                ["ctrl-rightbracket", "ctrl-leftbracket", "right", "left"],
+                ["play", "volumeup", "volumedown", "3"],
+            ],
+            knobs: [
+                (ccw: "3", press: "mute", cw: "3"),
+                (ccw: "3", press: "3", cw: "3"),
+            ],
+        ),
     ],
 )
