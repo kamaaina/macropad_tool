@@ -2,7 +2,10 @@ use anyhow::{ensure, Result};
 use log::debug;
 use rusb::{Context, DeviceHandle};
 
-use crate::{consts, messages};
+use crate::{
+    consts,
+    messages::{self, Messages},
+};
 
 use super::{Key, Keyboard, LedColor, Macro, MouseAction, MouseEvent};
 
@@ -13,7 +16,10 @@ pub struct Keyboard884x {
 }
 
 impl Keyboard for Keyboard884x {
-    fn map_key(&mut self, layer: u8, key_num: u8, key: String) -> Result<()> {
+    fn map_key(&mut self, layer: u8, key_num: u8, key_chord: String) -> Result<()> {
+        debug!("layer: {layer} key_num: {key_num} key_chord: {key_chord}");
+        let msg = Messages::build_key_msg(key_chord, layer, key_num, 0)?;
+        self.send(&msg)?;
         Ok(())
     }
 

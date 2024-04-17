@@ -26,18 +26,24 @@ pub trait Keyboard {
     fn get_in_endpoint(&self) -> u8;
 
     fn send(&mut self, msg: &[u8]) -> Result<()> {
+        /*
         let mut buf = [0; 65];
         buf.iter_mut().zip(msg.iter()).for_each(|(dst, src)| {
             *dst = *src;
         });
+        */
 
-        debug!("send: {:02x?}", buf);
+        debug!("msg size: {}", msg.len());
+        debug!("msg: {:02x?}", msg);
+        //debug!("send: {:02x?}", buf);
         let written = self.get_handle().write_interrupt(
             self.get_out_endpoint(),
-            &buf,
+            //&buf,
+            &msg,
             consts::DEFAULT_TIMEOUT,
         )?;
-        ensure!(written == buf.len(), "not all data written");
+        //ensure!(written == buf.len(), "not all data written");
+        ensure!(written == msg.len(), "not all data written");
         Ok(())
     }
 
@@ -156,7 +162,9 @@ pub enum Modifier {
 
 pub type Modifiers = EnumSet<Modifier>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, EnumMessage, Display)]
+#[derive(
+    Debug, ToPrimitive, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, EnumMessage, Display,
+)]
 #[repr(u16)]
 #[strum(serialize_all = "lowercase")]
 #[strum(ascii_case_insensitive)]
@@ -212,7 +220,9 @@ impl Code {
     }
 }
 
-#[derive(Debug, FromPrimitive, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, Display)]
+#[derive(
+    Debug, ToPrimitive, FromPrimitive, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, Display,
+)]
 #[repr(u8)]
 #[strum(ascii_case_insensitive)]
 #[strum(serialize_all = "lowercase")]
