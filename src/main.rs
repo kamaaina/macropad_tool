@@ -116,7 +116,7 @@ fn main() -> Result<()> {
                         )?;
                     }
                 }
-                keyboard.send(&Messages::end_program())?;
+                let _ = keyboard.send(&Messages::end_program());
             }
 
             println!("デバイスのプログラミングが完了しました");
@@ -125,7 +125,7 @@ fn main() -> Result<()> {
         Command::Led(LedCommand { index, led_color }) => {
             let mut keyboard = open_keyboard(&options)?;
             keyboard.set_led(*index, *led_color)?;
-            keyboard.send(&Messages::end_program())?;
+            let _ = keyboard.send(&Messages::end_program());
         }
 
         Command::Read { layer } => {
@@ -134,8 +134,8 @@ fn main() -> Result<()> {
             let mut keyboard = open_keyboard(&options)?;
 
             // get the type of device
-            keyboard.send(&messages::Messages::device_type())?;
-            keyboard.recieve(&mut buf)?;
+            let _ = keyboard.send(&messages::Messages::device_type());
+            let _ = keyboard.recieve(&mut buf);
             let device_info = decoder::Decoder::get_device_info(&buf);
             info!(
                 "OUT: 0x{:02x} IN: 0x{:02x}",
@@ -153,11 +153,11 @@ fn main() -> Result<()> {
             let mut mappings: Vec<KeyMapping> = Vec::new();
             if *layer > 0 {
                 // specific layer
-                keyboard.send(&messages::Messages::read_config(
+                let _ = keyboard.send(&messages::Messages::read_config(
                     device_info.num_keys,
                     device_info.num_encoders,
                     *layer,
-                ))?;
+                ));
                 // read keys for specified layer
                 info!("reading keys for layer {}", layer);
                 let data = messages::Messages::read_config(
@@ -165,7 +165,7 @@ fn main() -> Result<()> {
                     device_info.num_encoders,
                     *layer,
                 );
-                keyboard.send(&data)?;
+                let _ = keyboard.send(&data);
 
                 // read all messages from device
                 loop {
@@ -180,18 +180,18 @@ fn main() -> Result<()> {
             } else {
                 // read keys for all layers
                 for i in 1..=consts::NUM_LAYERS {
-                    keyboard.send(&messages::Messages::read_config(
+                    let _ = keyboard.send(&messages::Messages::read_config(
                         device_info.num_keys,
                         device_info.num_encoders,
                         i,
-                    ))?;
+                    ));
                     info!("reading keys for layer {i}");
                     let data = messages::Messages::read_config(
                         device_info.num_keys,
                         device_info.num_encoders,
                         i,
                     );
-                    keyboard.send(&data)?;
+                    let _ = keyboard.send(&data);
 
                     // read all messages from device
                     loop {
@@ -314,7 +314,7 @@ fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
 
     // Open device.
     let mut handle = device.open().context("open USB device")?;
-    handle.set_auto_detach_kernel_driver(true)?;
+    let _ = handle.set_auto_detach_kernel_driver(true);
     handle
         .claim_interface(intf_num)
         .context("claim interface")?;
