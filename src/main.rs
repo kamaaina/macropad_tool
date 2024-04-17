@@ -85,12 +85,9 @@ fn main() -> Result<()> {
                         println!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, j);
                         keyboard.map_key((i + 1).try_into()?, j, btn.to_string())?;
                         j += 1;
-                        break; // =================== debug
                     }
-                    break; // =================== debug
                 }
 
-                /*
                 // TODO: test 9x3 to see if the 3 knobs are top to bottom with key number
                 j = 0x10;
                 for knob in &layer.knobs {
@@ -106,8 +103,6 @@ fn main() -> Result<()> {
                     println!("layer: {} key: 0x{:02x} knob ccw {}", i + 1, j, knob.ccw);
                     j += 1;
                 }
-                */
-                break; // =================== debug
             }
             let _ = keyboard.send(&Messages::end_program());
 

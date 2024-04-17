@@ -90,19 +90,32 @@ impl Messages {
         let mut cnt = 0;
         for binding in &keys {
             let kc: Vec<_> = binding.split('-').collect();
-            for key in kc {
+            let mut m_c = 0x00u8;
+            let mut wkk = 0x00;
+            for (i, key) in kc.iter().enumerate() {
                 println!("=> {key}");
-                let mut m_c = 0x00;
-                let mut wkk = 0x00;
                 if let Ok(m) = Modifier::from_str(&key) {
-                    m_c = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
+                    let power = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
+                    m_c = 0u32.pow(power as u32) as u8;
+                    println!("11111 - {m_c}");
                 } else if let Ok(w) = WellKnownCode::from_str(&key) {
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
+                    println!("22222 - {wkk}");
                 } else if let Ok(a) = MediaCode::from_str(&key) {
-                    wkk = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
+                    //m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
+                    println!("33333 - FIXME: implement");
                 }
-                msg.extend_from_slice(&[m_c, wkk]);
-                cnt += 1;
+                if kc.len() > 1 {
+                    if i == 0 {
+                        msg.extend_from_slice(&[m_c]);
+                    } else {
+                        msg.extend_from_slice(&[wkk]);
+                        cnt += 1;
+                    }
+                } else {
+                    msg.extend_from_slice(&[m_c, wkk]);
+                    cnt += 1;
+                }
             }
         }
 
@@ -130,11 +143,23 @@ mod tests {
         // 03 fd 01 01 01 00 00 00     00 00 02 01 04 01 16 00   00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let msg = Messages::build_key_msg("ctrl-a,ctrl-s".to_string(), 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65);
         assert_eq!(msg[10], 0x02);
         assert_eq!(msg[11], 0x01);
         assert_eq!(msg[12], 0x04);
         assert_eq!(msg[13], 0x01);
         assert_eq!(msg[14], 0x16);
+        Ok(())
+    }
+
+    #[test]
+    fn well_known_key() -> anyhow::Result<()> {
+        let msg = Messages::build_key_msg("a".to_string(), 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65);
+        assert_eq!(msg[10], 0x01);
+        assert_eq!(msg[11], 0x00);
+        assert_eq!(msg[12], 0x04);
         Ok(())
     }
 }
