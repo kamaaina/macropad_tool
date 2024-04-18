@@ -85,7 +85,7 @@ fn main() -> Result<()> {
             let device_info = decoder::Decoder::get_device_info(&buf);
             ensure!(
                 device_info.num_keys == (config.device.rows * config.device.cols)
-                    && device_info.num_encoders != config.device.knobs,
+                    && device_info.num_encoders == config.device.knobs,
                 "Configuration file and macropad mismatch.\nLooks like you are trying to program a different macropad.\nDid you select the right configuration file?\n"
             );
 
