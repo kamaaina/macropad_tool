@@ -11,6 +11,10 @@ pub struct Keyboard8880 {
 }
 
 impl Keyboard for Keyboard8880 {
+    fn map_key(&mut self, layer: u8, key_num: u8, key: String) -> Result<()> {
+        Ok(())
+    }
+
     fn bind_key(&mut self, layer: u8, key: Key, expansion: &Macro) -> Result<()> {
         ensure!(layer <= 15, "invalid layer index");
 

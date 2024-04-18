@@ -57,11 +57,19 @@ pub enum Command {
     /// Show supported keys and modifiers
     ShowKeys,
 
-    /// Validate key mappings config on stdin
-    Validate,
+    /// Validate key mappings config
+    Validate {
+        /// Configuration file in ron format
+        #[clap(short, long, default_value = "./mapping.ron")]
+        config_file: String,
+    },
 
-    /// Program key mappings from stdin to device
-    Program,
+    /// Program key mappings
+    Program {
+        /// Configuration file in ron format
+        #[clap(short, long, default_value = "./mapping.ron")]
+        config_file: String,
+    },
 
     /// Read configuration from device
     Read {

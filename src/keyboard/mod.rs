@@ -18,6 +18,7 @@ use itertools::Itertools as _;
 
 pub trait Keyboard {
     fn bind_key(&mut self, layer: u8, key: Key, expansion: &Macro) -> Result<()>;
+    fn map_key(&mut self, layer: u8, key_num: u8, key: String) -> Result<()>;
     fn set_led(&mut self, n: u8, color: LedColor) -> Result<()>;
 
     fn get_handle(&self) -> &DeviceHandle<Context>;
@@ -25,18 +26,24 @@ pub trait Keyboard {
     fn get_in_endpoint(&self) -> u8;
 
     fn send(&mut self, msg: &[u8]) -> Result<()> {
+        /*
         let mut buf = [0; 65];
         buf.iter_mut().zip(msg.iter()).for_each(|(dst, src)| {
             *dst = *src;
         });
+        */
 
-        debug!("send: {:02x?}", buf);
+        debug!("msg size: {}", msg.len());
+        debug!("msg: {:02x?}", msg);
+        //debug!("send: {:02x?}", buf);
         let written = self.get_handle().write_interrupt(
             self.get_out_endpoint(),
-            &buf,
+            //&buf,
+            &msg,
             consts::DEFAULT_TIMEOUT,
         )?;
-        ensure!(written == buf.len(), "not all data written");
+        //ensure!(written == buf.len(), "not all data written");
+        ensure!(written == msg.len(), "not all data written");
         Ok(())
     }
 
@@ -155,7 +162,9 @@ pub enum Modifier {
 
 pub type Modifiers = EnumSet<Modifier>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, EnumMessage, Display)]
+#[derive(
+    Debug, ToPrimitive, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, EnumMessage, Display,
+)]
 #[repr(u16)]
 #[strum(serialize_all = "lowercase")]
 #[strum(ascii_case_insensitive)]
@@ -211,7 +220,9 @@ impl Code {
     }
 }
 
-#[derive(Debug, FromPrimitive, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, Display)]
+#[derive(
+    Debug, ToPrimitive, FromPrimitive, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, Display,
+)]
 #[repr(u8)]
 #[strum(ascii_case_insensitive)]
 #[strum(serialize_all = "lowercase")]
@@ -394,7 +405,7 @@ pub enum MouseModifier {
     Alt = 0x04,
 }
 
-#[derive(Debug, EnumSetType, EnumIter, Display)]
+#[derive(EnumString, Debug, EnumSetType, EnumIter, Display)]
 pub enum MouseButton {
     #[strum(serialize = "click")]
     Left,
@@ -406,7 +417,8 @@ pub enum MouseButton {
 
 pub type MouseButtons = EnumSet<MouseButton>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString)]
+#[strum(ascii_case_insensitive)]
 pub enum MouseAction {
     Click(MouseButtons),
     WheelUp,

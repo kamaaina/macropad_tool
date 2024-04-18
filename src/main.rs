@@ -2,26 +2,25 @@ mod config;
 mod consts;
 mod decoder;
 mod keyboard;
+mod mapping;
 mod messages;
 mod options;
 mod parse;
-mod printer;
 
-use crate::config::Config;
 use crate::consts::PRODUCT_IDS;
 use crate::decoder::KeyMapping;
 use crate::keyboard::{
-    k884x, k8880, Keyboard, KnobAction, MediaCode, Modifier, MouseAction, MouseButton,
-    WellKnownCode,
+    k884x, k8880, Keyboard, MediaCode, Modifier, MouseAction, MouseButton, WellKnownCode,
 };
 use crate::messages::Messages;
+use crate::options::Options;
 use crate::options::{Command, LedCommand};
-use crate::{keyboard::Key, options::Options};
 
 use anyhow::{anyhow, ensure, Result};
 use indoc::indoc;
 use itertools::Itertools;
 use log::{debug, info};
+use mapping::Mapping;
 use rusb::{Context, Device, DeviceDescriptor, Direction, TransferType};
 
 use anyhow::Context as _;
@@ -65,58 +64,51 @@ fn main() -> Result<()> {
             }
         }
 
-        Command::Validate => {
-            // Load and validate mapping.
-            let config: Config =
-                serde_yaml::from_reader(std::io::stdin().lock()).context("load mapping config")?;
-            let _ = config.render().context("render mappings config")?;
+        Command::Validate { config_file } => {
+            // load and validate mapping
+            Mapping::validate(config_file).context("validating configuration file")?;
             println!("config is valid 👌")
         }
 
-        Command::Program => {
-            // Load and validate mapping.
-            let config: Config =
-                serde_yaml::from_reader(std::io::stdin().lock()).context("load mapping config")?;
-            let layers = config.render().context("render mapping config")?;
-
+        Command::Program { config_file } => {
+            // load and validate mapping
+            Mapping::validate(config_file)?;
+            let config = Mapping::read(config_file);
             let mut keyboard = open_keyboard(&options)?;
 
-            // Apply keyboard mapping.
-            for (layer_idx, layer) in layers.iter().enumerate() {
-                for (button_idx, macro_) in layer.buttons.iter().enumerate() {
-                    if let Some(macro_) = macro_ {
-                        keyboard
-                            .bind_key(layer_idx as u8, Key::Button(button_idx as u8), macro_)
-                            .context("bind key")?;
+            for (i, layer) in config.layers.iter().enumerate() {
+                let lyr = (i + 1) as u8;
+                let mut j = 1;
+                for row in &layer.buttons {
+                    for btn in row {
+                        debug!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, j);
+                        keyboard.map_key(lyr, j, btn.to_string())?;
+                        j += 1;
                     }
                 }
 
-                for (knob_idx, knob) in layer.knobs.iter().enumerate() {
-                    if let Some(macro_) = &knob.ccw {
-                        keyboard.bind_key(
-                            layer_idx as u8,
-                            Key::Knob(knob_idx as u8, KnobAction::RotateCCW),
-                            macro_,
-                        )?;
-                    }
-                    if let Some(macro_) = &knob.press {
-                        keyboard.bind_key(
-                            layer_idx as u8,
-                            Key::Knob(knob_idx as u8, KnobAction::Press),
-                            macro_,
-                        )?;
-                    }
-                    if let Some(macro_) = &knob.cw {
-                        keyboard.bind_key(
-                            layer_idx as u8,
-                            Key::Knob(knob_idx as u8, KnobAction::RotateCW),
-                            macro_,
-                        )?;
-                    }
+                // TODO: test 9x3 to see if the 3 knobs are top to bottom with key number
+                j = 0x10;
+                for knob in &layer.knobs {
+                    debug!("layer: {} key: 0x{:02x} knob cw {}", i + 1, j, knob.cw);
+                    keyboard.map_key(lyr, j, knob.cw.clone())?;
+                    j += 1;
+
+                    debug!(
+                        "layer: {} key: 0x{:02x} knob press {}",
+                        i + 1,
+                        j,
+                        knob.press
+                    );
+                    keyboard.map_key(lyr, j, knob.press.clone())?;
+                    j += 1;
+
+                    debug!("layer: {} key: 0x{:02x} knob ccw {}", i + 1, j, knob.ccw);
+                    keyboard.map_key(lyr, j, knob.ccw.clone())?;
+                    j += 1;
                 }
-                let _ = keyboard.send(&Messages::end_program());
             }
-
+            let _ = keyboard.send(&Messages::end_program());
             println!("デバイスのプログラミングが完了しました");
         }
 
@@ -213,52 +205,6 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-
-/*
-fn find_and_init(options: &Options) -> Result<DeviceHandle<Context>> {
-    // find USB device based on the product id
-    let (device, _desc, _id_product) = find_device(
-        options.devel_options.vendor_id,
-        options
-            .devel_options
-            .product_id
-            .expect("expected product id"),
-    )
-    .context("find USB device")?;
-
-    // find correct endpoints; we need both IN and OUT
-    let (intf_num, endpt_addr_out, endpt_addr_in) = find_interface_and_endpoint(
-        &device,
-        None,
-        options.devel_options.out_endpoint_address,
-        options.devel_options.in_endpoint_address,
-    )?;
-    info!(
-        "found interface number: {intf_num}, OUT endpoint: 0x{:02x}, and IN endpoint: 0x{:02x}",
-        endpt_addr_out, endpt_addr_in
-    );
-
-    // open device
-    let mut handle = device.open().context("open USB device")?;
-    let _ = handle.set_auto_detach_kernel_driver(true);
-    handle
-        .claim_interface(intf_num)
-        .context("claim interface")?;
-
-    let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
-
-    // probe device to see what type of macropad we have
-    let mp_type = messages::Messages::device_type();
-    let _ = handle.write_interrupt(endpt_addr_out, &mp_type, consts::TIMEOUT);
-    let _ = reader::Reader::read_device_msg(
-        options.devel_options.in_endpoint_address,
-        &handle,
-        &mut buf,
-    );
-
-    Ok(handle)
-}
-*/
 
 pub fn find_interface_and_endpoint(
     device: &Device<Context>,
@@ -394,13 +340,6 @@ pub fn find_device(vid: u16, pid: u16) -> Result<(Device<Context>, DeviceDescrip
         if desc.vendor_id() == vid && PRODUCT_IDS.contains(&pid) {
             found.push((device, desc, product_id));
         }
-
-        /*
-        // FIXME: add support for other product id's
-        if desc.vendor_id() == vid && desc.product_id() == pid {
-            found.push((device, desc, product_id));
-        }
-        */
     }
 
     match found.len() {
