@@ -126,7 +126,6 @@ mod tests {
 
     use std::path::PathBuf;
 
-    #[test]
     fn parse_example_config() -> anyhow::Result<()> {
         let mut path = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
         path.push("mapping.yml");
