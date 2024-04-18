@@ -76,6 +76,19 @@ fn main() -> Result<()> {
             let config = Mapping::read(config_file);
             let mut keyboard = open_keyboard(&options)?;
 
+            // ensure the config we have matches the connected device we want to program
+            let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
+
+            // get the type of device
+            let _ = keyboard.send(&messages::Messages::device_type());
+            let _ = keyboard.recieve(&mut buf);
+            let device_info = decoder::Decoder::get_device_info(&buf);
+            ensure!(
+                device_info.num_keys == (config.device.rows * config.device.cols)
+                    && device_info.num_encoders != config.device.knobs,
+                "Configuration file and macropad mismatch.\nLooks like you are trying to program a different macropad.\nDid you select the right configuration file?\n"
+            );
+
             for (i, layer) in config.layers.iter().enumerate() {
                 let lyr = (i + 1) as u8;
                 let mut j = 1;
