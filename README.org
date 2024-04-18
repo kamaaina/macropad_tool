@@ -69,7 +69,8 @@ sudo udevadm trigger
 ** Validate configuration
 
 #+begin_example
-macropad-tool validate < your-config.yml
+macropad-tool validate # by default looks for a mapping.ron file
+macropad-tool validate -c <ron_file>  # to specify a different configuration file
 #+end_example
 
 Use 'show-keys' command to list all supported modifier and key names.
@@ -78,7 +79,8 @@ Use 'show-keys' command to list all supported modifier and key names.
 Needs root access or ensure udev rules was added. For Windows, need Administrator command prompt
 
 #+begin_example
-macropad-tool program < your-config.yml
+macropad-tool program # by defult looks for a mapping.ron file
+macropad-tool program -c <ron_file>  # to specify a different configuration file
 #+end_example
 
 * Windows
