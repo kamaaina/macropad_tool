@@ -213,14 +213,42 @@ fn main() -> Result<()> {
             // process responses from device
             let rows_cols = guestimate_rows_cols(device_info.num_keys)?;
             let mut mp = Macropad::new(rows_cols.0, rows_cols.1, device_info.num_encoders);
-            println!("mp: {:?}", mp);
             for km in mappings {
                 println!("{:?}", km);
+                if km.key_number <= mp.device.rows * mp.device.cols {
+                    let row_col = get_position(&mp, km.key_number)?;
+                    println!(
+                        "   key: {} at row: {} col: {}",
+                        km.key_number, row_col.0, row_col.1
+                    );
+                    mp.layers[(km.layer - 1) as usize].buttons[row_col.0][row_col.1] =
+                        km.keys.join("-");
+                }
             }
+            println!("mp: {:?}", mp);
         }
     }
 
     Ok(())
+}
+
+pub fn get_position(mp: &Macropad, key_num: u8) -> Result<(usize, usize)> {
+    let mut row = 0;
+    let mut col;
+
+    if key_num > mp.device.cols {
+        col = key_num % mp.device.cols;
+        row = key_num / mp.device.cols;
+        if col > 0 {
+            col -= 1;
+        } else {
+            row = (key_num / mp.device.cols) - 1;
+            col = 3;
+        }
+    } else {
+        col = key_num - 1;
+    }
+    Ok((row.into(), col.into()))
 }
 
 pub fn guestimate_rows_cols(num_keys: u8) -> Result<(u8, u8)> {
