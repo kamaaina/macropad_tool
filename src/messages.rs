@@ -1,10 +1,10 @@
 use crate::{
     consts,
-    keyboard::{LedColor, MediaCode, Modifier, WellKnownCode},
+    keyboard::{LedColor, MediaCode, Modifier, MouseAction, WellKnownCode},
 };
 use anyhow::Result;
 use log::debug;
-use num::{FromPrimitive, ToPrimitive};
+use num::ToPrimitive;
 use std::str::FromStr;
 
 pub struct Messages {}
@@ -71,7 +71,12 @@ impl Messages {
         ]
     }
 
-    pub fn build_key_msg(key_chord: String, layer: u8, key_pos: u8, delay: u16) -> Result<Vec<u8>> {
+    pub fn build_key_msg(
+        key_chord: String,
+        layer: u8,
+        key_pos: u8,
+        _delay: u16,
+    ) -> Result<Vec<u8>> {
         let keys: Vec<_> = key_chord.split(',').collect();
         let mut msg = vec![
             0x03,
@@ -88,11 +93,12 @@ impl Messages {
         ];
 
         let mut cnt = 0;
+        let mut mouse_action = 0u8;
         for binding in &keys {
             let kc: Vec<_> = binding.split('-').collect();
             let mut m_c = 0x00u8;
             let mut wkk = 0x00;
-            for (i, key) in kc.iter().enumerate() {
+            for key in kc {
                 println!("=> {key}");
                 if let Ok(m) = Modifier::from_str(&key) {
                     let power = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
@@ -100,9 +106,22 @@ impl Messages {
                 } else if let Ok(w) = WellKnownCode::from_str(&key) {
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
                 } else if let Ok(a) = MediaCode::from_str(&key) {
-                    //m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
-                    // set byte 10 to a value ???
-                    println!("########## - FIXME: implement");
+                    m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
+                    msg[4] = 0x02;
+                    msg[10] = 0x02;
+                } else if let Ok(a) = MouseAction::from_str(&key) {
+                    println!("*********** {}", a);
+                    m_c = 0x01;
+                    match a.to_string().as_str() {
+                        "wheelup" => {
+                            mouse_action = 0x01;
+                        }
+                        "wheeldown" => {
+                            mouse_action = 0xff;
+                        }
+                        _ => panic!("fixme!"),
+                    }
+                    msg[4] = 0x03;
                 }
             }
             msg.extend_from_slice(&[m_c, wkk]);
@@ -111,6 +130,10 @@ impl Messages {
 
         for _i in 0..=(consts::MAX_KEY_PRESSES - cnt) {
             msg.extend_from_slice(&[0x00, 0x00]);
+        }
+
+        if mouse_action > 0 {
+            msg[15] = mouse_action;
         }
 
         // last 18 bytes are always 0
@@ -133,12 +156,12 @@ mod tests {
         // 03 fd 01 01 01 00 00 00     00 00 02 01 04 01 16 00   00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let msg = Messages::build_key_msg("ctrl-a,ctrl-s".to_string(), 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65);
-        assert_eq!(msg[10], 0x02);
-        assert_eq!(msg[11], 0x01);
-        assert_eq!(msg[12], 0x04);
-        assert_eq!(msg[13], 0x01);
-        assert_eq!(msg[14], 0x16);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[10], 0x02, "checking number of keys to program");
+        assert_eq!(msg[11], 0x01, "checking for ctrl modifier");
+        assert_eq!(msg[12], 0x04, "checking for 'a' key");
+        assert_eq!(msg[13], 0x01, "checking for ctrl modifier");
+        assert_eq!(msg[14], 0x16, "checking for 's' key");
         Ok(())
     }
 
@@ -146,10 +169,48 @@ mod tests {
     fn well_known_key() -> anyhow::Result<()> {
         let msg = Messages::build_key_msg("a".to_string(), 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65);
-        assert_eq!(msg[10], 0x01);
-        assert_eq!(msg[11], 0x00);
-        assert_eq!(msg[12], 0x04);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[10], 0x01, "checking number of keys to program");
+        assert_eq!(msg[11], 0x00, "checking for modifier");
+        assert_eq!(msg[12], 0x04, "checking for 'a' key");
+        Ok(())
+    }
+
+    #[test]
+    fn volume_down() -> anyhow::Result<()> {
+        // 03 fd 10 01 02 00 00 00     00 00 02 ea 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let msg = Messages::build_key_msg("volumedown".to_string(), 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x02, "checking byte 4");
+        assert_eq!(msg[10], 0x02, "checking byte 10");
+        assert_eq!(msg[11], 0xea, "checking byte 11");
+        Ok(())
+    }
+
+    #[test]
+    fn mouse_ctrl_plus() -> anyhow::Result<()> {
+        // 03 fd 01 02 03 00 00 00     00 00 01 01 00 00 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let msg = Messages::build_key_msg("ctrl-wheelup".to_string(), 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x03, "checking byte 4");
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x01, "checking byte 11");
+        assert_eq!(msg[15], 0x01, "checking byte 15");
+        Ok(())
+    }
+
+    #[test]
+    fn mouse_ctrl_minus() -> anyhow::Result<()> {
+        // 03 fd 02 02 03 00 00 00     00 00 01 01 00 00 00 ff 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let msg = Messages::build_key_msg("ctrl-wheeldown".to_string(), 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x03, "checking byte 4");
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x01, "checking byte 11");
+        assert_eq!(msg[15], 0xff, "checking byte 15");
         Ok(())
     }
 }

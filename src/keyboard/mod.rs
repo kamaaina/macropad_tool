@@ -417,7 +417,8 @@ pub enum MouseButton {
 
 pub type MouseButtons = EnumSet<MouseButton>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString)]
+#[strum(ascii_case_insensitive)]
 pub enum MouseAction {
     Click(MouseButtons),
     WheelUp,

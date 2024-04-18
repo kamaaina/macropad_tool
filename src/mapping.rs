@@ -173,7 +173,7 @@ impl Mapping {
                 let da_key = Self::uppercase_first(sk);
                 // could be media, control, or regular key
                 let mut found = false;
-                for i in 0..3 {
+                for i in 0..4 {
                     match i {
                         0 => {
                             found = Self::is_modifier_key(&da_key);
@@ -183,6 +183,9 @@ impl Mapping {
                         }
                         2 => {
                             found = Self::is_regular_key(&da_key);
+                        }
+                        3 => {
+                            found = Self::is_mouse_action(&da_key);
                         }
                         _ => {
                             panic!("unaccounted key test")
@@ -236,6 +239,13 @@ impl Mapping {
             return true;
         }
         false
+    }
+
+    fn is_mouse_action(keystr: &String) -> bool {
+        match keystr.to_lowercase().as_str() {
+            "wheelup" | "wheeldown" => true,
+            _ => false,
+        }
     }
 }
 

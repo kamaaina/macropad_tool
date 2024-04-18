@@ -7,16 +7,14 @@ mod messages;
 mod options;
 mod parse;
 
-use crate::config::Config;
 use crate::consts::PRODUCT_IDS;
 use crate::decoder::KeyMapping;
 use crate::keyboard::{
-    k884x, k8880, Keyboard, KnobAction, MediaCode, Modifier, MouseAction, MouseButton,
-    WellKnownCode,
+    k884x, k8880, Keyboard, MediaCode, Modifier, MouseAction, MouseButton, WellKnownCode,
 };
 use crate::messages::Messages;
+use crate::options::Options;
 use crate::options::{Command, LedCommand};
-use crate::{keyboard::Key, options::Options};
 
 use anyhow::{anyhow, ensure, Result};
 use indoc::indoc;
@@ -83,7 +81,7 @@ fn main() -> Result<()> {
                 let mut j = 1;
                 for row in &layer.buttons {
                     for btn in row {
-                        println!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, j);
+                        debug!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, j);
                         keyboard.map_key(lyr, j, btn.to_string())?;
                         j += 1;
                     }
@@ -92,11 +90,11 @@ fn main() -> Result<()> {
                 // TODO: test 9x3 to see if the 3 knobs are top to bottom with key number
                 j = 0x10;
                 for knob in &layer.knobs {
-                    println!("layer: {} key: 0x{:02x} knob cw {}", i + 1, j, knob.cw);
+                    debug!("layer: {} key: 0x{:02x} knob cw {}", i + 1, j, knob.cw);
                     keyboard.map_key(lyr, j, knob.cw.clone())?;
                     j += 1;
 
-                    println!(
+                    debug!(
                         "layer: {} key: 0x{:02x} knob press {}",
                         i + 1,
                         j,
@@ -105,57 +103,12 @@ fn main() -> Result<()> {
                     keyboard.map_key(lyr, j, knob.press.clone())?;
                     j += 1;
 
-                    println!("layer: {} key: 0x{:02x} knob ccw {}", i + 1, j, knob.ccw);
+                    debug!("layer: {} key: 0x{:02x} knob ccw {}", i + 1, j, knob.ccw);
                     keyboard.map_key(lyr, j, knob.ccw.clone())?;
                     j += 1;
                 }
             }
             let _ = keyboard.send(&Messages::end_program());
-
-            /*
-            let config: Config =
-                serde_yaml::from_reader(std::io::stdin().lock()).context("load mapping config")?;
-            let layers = config.render().context("render mapping config")?;
-
-            let mut keyboard = open_keyboard(&options)?;
-
-            // Apply keyboard mapping.
-            for (layer_idx, layer) in layers.iter().enumerate() {
-                for (button_idx, macro_) in layer.buttons.iter().enumerate() {
-                    if let Some(macro_) = macro_ {
-                        keyboard
-                            .bind_key(layer_idx as u8, Key::Button(button_idx as u8), macro_)
-                            .context("bind key")?;
-                    }
-                }
-
-                for (knob_idx, knob) in layer.knobs.iter().enumerate() {
-                    if let Some(macro_) = &knob.ccw {
-                        keyboard.bind_key(
-                            layer_idx as u8,
-                            Key::Knob(knob_idx as u8, KnobAction::RotateCCW),
-                            macro_,
-                        )?;
-                    }
-                    if let Some(macro_) = &knob.press {
-                        keyboard.bind_key(
-                            layer_idx as u8,
-                            Key::Knob(knob_idx as u8, KnobAction::Press),
-                            macro_,
-                        )?;
-                    }
-                    if let Some(macro_) = &knob.cw {
-                        keyboard.bind_key(
-                            layer_idx as u8,
-                            Key::Knob(knob_idx as u8, KnobAction::RotateCW),
-                            macro_,
-                        )?;
-                    }
-                }
-                let _ = keyboard.send(&Messages::end_program());
-            }
-            */
-
             println!("デバイスのプログラミングが完了しました");
         }
 
