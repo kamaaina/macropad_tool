@@ -243,7 +243,7 @@ impl Mapping {
 
     fn is_mouse_action(keystr: &String) -> bool {
         match keystr.to_lowercase().as_str() {
-            "wheelup" | "wheeldown" => true,
+            "wheelup" | "wheeldown" | "click" | "mclick" | "rclick" => true,
             _ => false,
         }
     }

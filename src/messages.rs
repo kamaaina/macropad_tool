@@ -1,6 +1,6 @@
 use crate::{
     consts,
-    keyboard::{LedColor, MediaCode, Modifier, MouseAction, WellKnownCode},
+    keyboard::{LedColor, MediaCode, Modifier, MouseAction, MouseButton, WellKnownCode},
 };
 use anyhow::Result;
 use log::debug;
@@ -94,6 +94,7 @@ impl Messages {
 
         let mut cnt = 0;
         let mut mouse_action = 0u8;
+        let mut mouse_click = 0u8;
         for binding in &keys {
             let kc: Vec<_> = binding.split('-').collect();
             let mut m_c = 0x00u8;
@@ -109,8 +110,21 @@ impl Messages {
                     m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
                     msg[4] = 0x02;
                     msg[10] = 0x02;
+                } else if let Ok(a) = MouseButton::from_str(&key) {
+                    match a.to_string().as_str() {
+                        "click" => {
+                            mouse_click = 0x01;
+                        }
+                        "rclick" => {
+                            mouse_click = 0x02;
+                        }
+                        "mclick" => {
+                            mouse_click = 0x04;
+                        }
+                        _ => panic!("fixme!"),
+                    }
+                    msg[4] = 0x03;
                 } else if let Ok(a) = MouseAction::from_str(&key) {
-                    println!("*********** {}", a);
                     m_c = 0x01;
                     match a.to_string().as_str() {
                         "wheelup" => {
@@ -132,6 +146,9 @@ impl Messages {
             msg.extend_from_slice(&[0x00, 0x00]);
         }
 
+        if mouse_click > 0 {
+            msg[12] = mouse_click;
+        }
         if mouse_action > 0 {
             msg[15] = mouse_action;
         }
@@ -183,6 +200,9 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x02, "checking byte 4");
+        for i in 5..=9 {
+            assert_eq!(msg[i], 0x00);
+        }
         assert_eq!(msg[10], 0x02, "checking byte 10");
         assert_eq!(msg[11], 0xea, "checking byte 11");
         Ok(())
@@ -195,6 +215,9 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
+        for i in 5..=9 {
+            assert_eq!(msg[i], 0x00);
+        }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x01, "checking byte 11");
         assert_eq!(msg[15], 0x01, "checking byte 15");
@@ -208,9 +231,60 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
+        for i in 5..=9 {
+            assert_eq!(msg[i], 0x00);
+        }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x01, "checking byte 11");
         assert_eq!(msg[15], 0xff, "checking byte 15");
+        Ok(())
+    }
+
+    #[test]
+    fn mouse_left_click() -> anyhow::Result<()> {
+        // 03 fd 01 02 03 00 00 00     00 00 01 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let msg = Messages::build_key_msg("click".to_string(), 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x03, "checking byte 4");
+        for i in 5..=9 {
+            assert_eq!(msg[i], 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x00, "checking byte 11");
+        assert_eq!(msg[12], 0x01, "checking byte 12");
+        Ok(())
+    }
+
+    #[test]
+    fn mouse_middle_click() -> anyhow::Result<()> {
+        // 03 fd 02 02 03 00 00 00     00 00 01 00 04 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let msg = Messages::build_key_msg("mclick".to_string(), 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x03, "checking byte 4");
+        for i in 5..=9 {
+            assert_eq!(msg[i], 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x00, "checking byte 11");
+        assert_eq!(msg[12], 0x04, "checking byte 12");
+        Ok(())
+    }
+
+    #[test]
+    fn mouse_right_click() -> anyhow::Result<()> {
+        // 03 fd 03 02 03 00 00 00     00 00 01 00 02 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let msg = Messages::build_key_msg("rclick".to_string(), 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x03, "checking byte 4");
+        for i in 5..=9 {
+            assert_eq!(msg[i], 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x00, "checking byte 11");
+        assert_eq!(msg[12], 0x02, "checking byte 12");
         Ok(())
     }
 }
