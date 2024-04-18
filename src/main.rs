@@ -12,6 +12,7 @@ use crate::decoder::KeyMapping;
 use crate::keyboard::{
     k884x, k8880, Keyboard, MediaCode, Modifier, MouseAction, MouseButton, WellKnownCode,
 };
+use crate::mapping::Macropad;
 use crate::messages::Messages;
 use crate::options::Options;
 use crate::options::{Command, LedCommand};
@@ -210,6 +211,9 @@ fn main() -> Result<()> {
             }
 
             // process responses from device
+            let rows_cols = guestimate_rows_cols(device_info.num_keys)?;
+            let mut mp = Macropad::new(rows_cols.0, rows_cols.1, device_info.num_encoders);
+            println!("mp: {:?}", mp);
             for km in mappings {
                 println!("{:?}", km);
             }
@@ -217,6 +221,15 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+pub fn guestimate_rows_cols(num_keys: u8) -> Result<(u8, u8)> {
+    match num_keys {
+        6 => Ok((3, 2)),
+        9 => Ok((3, 3)),
+        12 => Ok((3, 4)),
+        _ => Err(anyhow!("unable to guess rows/cols for {num_keys}")),
+    }
 }
 
 pub fn find_interface_and_endpoint(
