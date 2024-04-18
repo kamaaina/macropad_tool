@@ -79,11 +79,12 @@ fn main() -> Result<()> {
             let mut keyboard = open_keyboard(&options)?;
 
             for (i, layer) in config.layers.iter().enumerate() {
+                let lyr = (i + 1) as u8;
                 let mut j = 1;
                 for row in &layer.buttons {
                     for btn in row {
                         println!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, j);
-                        keyboard.map_key((i + 1).try_into()?, j, btn.to_string())?;
+                        keyboard.map_key(lyr, j, btn.to_string())?;
                         j += 1;
                     }
                 }
@@ -92,15 +93,20 @@ fn main() -> Result<()> {
                 j = 0x10;
                 for knob in &layer.knobs {
                     println!("layer: {} key: 0x{:02x} knob cw {}", i + 1, j, knob.cw);
+                    keyboard.map_key(lyr, j, knob.cw.clone())?;
                     j += 1;
+
                     println!(
                         "layer: {} key: 0x{:02x} knob press {}",
                         i + 1,
                         j,
                         knob.press
                     );
+                    keyboard.map_key(lyr, j, knob.press.clone())?;
                     j += 1;
+
                     println!("layer: {} key: 0x{:02x} knob ccw {}", i + 1, j, knob.ccw);
+                    keyboard.map_key(lyr, j, knob.ccw.clone())?;
                     j += 1;
                 }
             }

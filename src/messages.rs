@@ -97,26 +97,16 @@ impl Messages {
                 if let Ok(m) = Modifier::from_str(&key) {
                     let power = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
                     m_c = 0u32.pow(power as u32) as u8;
-                    println!("11111 - {m_c}");
                 } else if let Ok(w) = WellKnownCode::from_str(&key) {
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
-                    println!("22222 - {wkk}");
                 } else if let Ok(a) = MediaCode::from_str(&key) {
                     //m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
-                    println!("33333 - FIXME: implement");
-                }
-                if kc.len() > 1 {
-                    if i == 0 {
-                        msg.extend_from_slice(&[m_c]);
-                    } else {
-                        msg.extend_from_slice(&[wkk]);
-                        cnt += 1;
-                    }
-                } else {
-                    msg.extend_from_slice(&[m_c, wkk]);
-                    cnt += 1;
+                    // set byte 10 to a value ???
+                    println!("########## - FIXME: implement");
                 }
             }
+            msg.extend_from_slice(&[m_c, wkk]);
+            cnt += 1;
         }
 
         for _i in 0..=(consts::MAX_KEY_PRESSES - cnt) {
