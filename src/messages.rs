@@ -121,7 +121,7 @@ impl Messages {
                         "mclick" => {
                             mouse_click = 0x04;
                         }
-                        _ => panic!("fixme!"),
+                        _ => panic!("should not get here!"),
                     }
                     msg[4] = 0x03;
                 } else if let Ok(a) = MouseAction::from_str(&key) {
@@ -133,7 +133,7 @@ impl Messages {
                         "wheeldown" => {
                             mouse_action = 0xff;
                         }
-                        _ => panic!("fixme!"),
+                        _ => panic!("should not get here!"),
                     }
                     msg[4] = 0x03;
                 }
