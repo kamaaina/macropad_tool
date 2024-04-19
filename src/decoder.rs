@@ -68,7 +68,7 @@ impl Decoder {
             match buf[12] {
                 0x01 => click_type = "click".to_string(),
                 0x02 => click_type = "rclick".to_string(),
-                0x03 => click_type = "mclick".to_string(),
+                0x04 => click_type = "mclick".to_string(),
                 _ => (),
             }
 
