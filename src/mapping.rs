@@ -98,7 +98,6 @@ impl Mapping {
             .enumerate_arrays(false);
 
         let s = to_string_pretty(&config, pretty).expect("Serialization failed");
-        println!("------------------------------");
         println!("{s}");
     }
 

@@ -133,7 +133,7 @@ fn main() -> Result<()> {
         }
 
         Command::Read { layer } => {
-            println!("dev options: {:?}", options.devel_options);
+            debug!("dev options: {:?}", options.devel_options);
             let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
             let mut keyboard = open_keyboard(&options)?;
 
@@ -217,7 +217,7 @@ fn main() -> Result<()> {
             let mut knob_type = 0;
             let mut last_layer = 0;
             for km in mappings {
-                println!("{:?}", km);
+                debug!("{:?}", km);
                 if km.layer != last_layer {
                     last_layer = km.layer;
                     knob_idx = 0;
@@ -227,7 +227,7 @@ fn main() -> Result<()> {
                 if km.key_number <= mp.device.rows * mp.device.cols {
                     // button mappings
                     let row_col = get_position(&mp, km.key_number)?;
-                    println!(
+                    debug!(
                         "   key: {} at row: {} col: {}",
                         km.key_number, row_col.0, row_col.1
                     );
@@ -235,7 +235,7 @@ fn main() -> Result<()> {
                         km.keys.join("-");
                 } else {
                     // knobs
-                    println!("knob idx: {} knob type: {}", knob_idx, knob_type);
+                    debug!("knob idx: {} knob type: {}", knob_idx, knob_type);
                     match knob_type {
                         0 => {
                             mp.layers[(km.layer - 1) as usize].knobs[knob_idx].ccw =
@@ -259,7 +259,6 @@ fn main() -> Result<()> {
                     }
                 }
             }
-            println!("mp: {:?}", mp);
             Mapping::print(mp);
         }
     }
