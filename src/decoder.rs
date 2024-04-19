@@ -45,7 +45,6 @@ impl Decoder {
         // 0x01 - WellKnownKey
         // 0x02 - Multimedia
         // 0x03 - Mouse
-        let key_type = buf[4];
 
         // can we do this or should we check if bit 0 and bit 1 is set?
         if buf[4] == 0x03 {
@@ -60,36 +59,46 @@ impl Decoder {
             */
 
             // mouse wheel
+            let mut wheel_mapping = String::new();
+            if buf[10] == 0x04 {
+                let mod_key = Self::get_key(&[buf[11], buf[12]]);
+                if mod_key.is_some() {
+                    let result = mod_key.unwrap();
+                    wheel_mapping = Self::modifier_to_str(result.modifier);
+                }
+            }
 
             // mouse click
-            let mut click_type = String::new();
+            let mut click_type = wheel_mapping;
+            if click_type.len() > 0 {
+                click_type += "-";
+            }
             match buf[12] {
                 0x01 => click_type = "click".to_string(),
                 0x02 => click_type = "rclick".to_string(),
                 0x03 => click_type = "mclick".to_string(),
-                _ => {
-                    println!("Unknown - have not seen this case before - {}", buf[12])
-                }
+                _ => (),
             }
 
             // mouse wheel status
+            if click_type.ends_with('-') {
+                click_type.pop();
+            }
             let mut key_str = click_type;
             match buf[15] {
                 0x01 => {
                     if key_str.len() > 0 {
                         key_str += "-";
                     }
-                    key_str = "wheelup".to_string();
+                    key_str += "wheelup";
                 }
                 0xFF => {
                     if key_str.len() > 0 {
                         key_str += "-";
                     }
-                    key_str = "wheeldown".to_string();
+                    key_str += "wheeldown";
                 }
-                _ => {
-                    println!("Unknown - have not seen this case before")
-                }
+                _ => (),
             }
             key_press.push(key_str);
 
@@ -471,12 +480,11 @@ mod tests {
         println!("{:?}", key);
         assert_eq!(key.keys[0], "wheeldown");
 
-        /*
-        // ctrl-mouseup
+        // ctrl-wheelup
         // 03 fa 13 01 03 00 00 00 00 00 04 01 00 00 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         msg = vec![
             0x03, 0xfa, 0x13, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -485,11 +493,22 @@ mod tests {
         key = Decoder::get_key_mapping(&msg)?;
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
-        assert_eq!(key.keys[0], "wheeldown");
-        */
+        assert_eq!(key.keys[0], "ctrl-wheelup");
 
-        // ctrl-mousedown
-        // 03fa15010300000000000401000000ff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        // ctrl-wheeldown
+        // 03 fa 15 01 03 00 00 00 00 00 04 01 00 00 00 ff 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        msg = vec![
+            0x03, 0xfa, 0x13, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00,
+            0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        println!("\ntest 11");
+        key = Decoder::get_key_mapping(&msg)?;
+        assert_eq!(key.layer, 1);
+        println!("{:?}", key);
+        assert_eq!(key.keys[0], "ctrl-wheeldown");
 
         Ok(())
     }
