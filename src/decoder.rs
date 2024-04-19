@@ -123,7 +123,6 @@ impl Decoder {
 
             // TODO: get the mapping
             let result = val.unwrap();
-            println!("modifier value: {:?}", &result.modifier);
             let mut key_str = Self::modifier_to_str(result.modifier);
             if result.wkc.is_some() {
                 //println!("WKC!!!!");
@@ -132,7 +131,6 @@ impl Decoder {
                 }
                 key_str += &result.wkc.unwrap().to_string();
             }
-            println!("### key string: {key_str}");
             key_press.push(key_str);
 
             i += 2;

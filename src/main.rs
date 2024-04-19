@@ -269,7 +269,7 @@ fn main() -> Result<()> {
 
 pub fn get_position(mp: &Macropad, key_num: u8) -> Result<(usize, usize)> {
     let cols = mp.device.cols;
-    let col;
+    let mut col;
     let mut row;
 
     if key_num % cols == 0 {
@@ -282,6 +282,10 @@ pub fn get_position(mp: &Macropad, key_num: u8) -> Result<(usize, usize)> {
     }
     if key_num > cols {
         col = key_num % cols;
+        if col == 0 {
+            col = cols;
+        }
+        col -= 1;
     } else {
         col = key_num - 1;
     }
