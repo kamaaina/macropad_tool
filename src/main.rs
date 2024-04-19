@@ -213,9 +213,19 @@ fn main() -> Result<()> {
             // process responses from device
             let rows_cols = guestimate_rows_cols(device_info.num_keys)?;
             let mut mp = Macropad::new(rows_cols.0, rows_cols.1, device_info.num_encoders);
+            let mut knob_idx = 0;
+            let mut knob_type = 0;
+            let mut last_layer = 0;
             for km in mappings {
                 println!("{:?}", km);
+                if km.layer != last_layer {
+                    last_layer = km.layer;
+                    knob_idx = 0;
+                    knob_type = 0;
+                }
+
                 if km.key_number <= mp.device.rows * mp.device.cols {
+                    // button mappings
                     let row_col = get_position(&mp, km.key_number)?;
                     println!(
                         "   key: {} at row: {} col: {}",
@@ -223,9 +233,34 @@ fn main() -> Result<()> {
                     );
                     mp.layers[(km.layer - 1) as usize].buttons[row_col.0][row_col.1] =
                         km.keys.join("-");
+                } else {
+                    // knobs
+                    println!("knob idx: {} knob type: {}", knob_idx, knob_type);
+                    match knob_type {
+                        0 => {
+                            mp.layers[(km.layer - 1) as usize].knobs[knob_idx].ccw =
+                                km.keys.join("-");
+                            knob_type += 1;
+                        }
+                        1 => {
+                            mp.layers[(km.layer - 1) as usize].knobs[knob_idx].press =
+                                km.keys.join("-");
+                            knob_type += 1;
+                        }
+                        2 => {
+                            mp.layers[(km.layer - 1) as usize].knobs[knob_idx].cw =
+                                km.keys.join("-");
+                            knob_type = 0;
+                            knob_idx += 1;
+                        }
+                        _ => {
+                            panic!("should not get here!")
+                        }
+                    }
                 }
             }
             println!("mp: {:?}", mp);
+            Mapping::print(mp);
         }
     }
 
