@@ -1,8 +1,7 @@
-use anyhow::{ensure, Result};
-use log::debug;
+use anyhow::Result;
 use rusb::{Context, DeviceHandle};
 
-use super::{Key, Keyboard, LedColor, Macro, MouseAction, MouseEvent};
+use super::{Keyboard, LedColor};
 
 pub struct Keyboard8880 {
     handle: DeviceHandle<Context>,
@@ -11,101 +10,8 @@ pub struct Keyboard8880 {
 }
 
 impl Keyboard for Keyboard8880 {
-    fn map_key(&mut self, layer: u8, key_num: u8, key: String) -> Result<()> {
-        Ok(())
-    }
-
-    fn bind_key(&mut self, layer: u8, key: Key, expansion: &Macro) -> Result<()> {
-        ensure!(layer <= 15, "invalid layer index");
-
-        debug!("bind {} on layer {} to {}", key, layer, expansion);
-
-        // Start key binding
-        self.send(&[0xfe, layer + 1, 0x1, 0x1, 0, 0, 0, 0])?;
-
-        match expansion {
-            Macro::Keyboard(presses) => {
-                ensure!(presses.len() <= 5, "macro sequence is too long");
-                // For whatever reason empty key is added before others.
-                let iter = presses.iter().map(|accord| {
-                    (
-                        accord.modifiers.as_u8(),
-                        accord.code.map_or(0, |c| c.value()),
-                    )
-                });
-                let (len, items) = (
-                    presses.len() as u8,
-                    Box::new(std::iter::once((0, 0)).chain(iter)),
-                );
-                for (i, (modifiers, code)) in items.enumerate() {
-                    self.send(&[
-                        key.to_key_id_12()?,
-                        ((layer + 1) << 4) | expansion.kind(),
-                        len,
-                        i as u8,
-                        modifiers,
-                        code,
-                        0,
-                        0,
-                    ])?;
-                }
-            }
-            Macro::Media(code) => {
-                let [low, high] = (*code as u16).to_le_bytes();
-                self.send(&[
-                    key.to_key_id_12()?,
-                    ((layer + 1) << 4) | 0x02,
-                    low,
-                    high,
-                    0,
-                    0,
-                    0,
-                    0,
-                ])?;
-            }
-            Macro::Mouse(MouseEvent(MouseAction::Click(buttons), modifier)) => {
-                ensure!(!buttons.is_empty(), "buttons must be given for click macro");
-                self.send(&[
-                    key.to_key_id_12()?,
-                    ((layer + 1) << 4) | 0x03,
-                    buttons.as_u8(),
-                    0,
-                    0,
-                    0,
-                    modifier.map_or(0, |m| m as u8),
-                    0,
-                ])?;
-            }
-            Macro::Mouse(MouseEvent(MouseAction::WheelUp, modifier)) => {
-                self.send(&[
-                    key.to_key_id_12()?,
-                    ((layer + 1) << 4) | 0x03,
-                    0,
-                    0,
-                    0,
-                    0x01,
-                    modifier.map_or(0, |m| m as u8),
-                    0,
-                ])?;
-            }
-            Macro::Mouse(MouseEvent(MouseAction::WheelDown, modifier)) => {
-                self.send(&[
-                    key.to_key_id_12()?,
-                    ((layer + 1) << 4) | 0x03,
-                    0,
-                    0,
-                    0,
-                    0xff,
-                    modifier.map_or(0, |m| m as u8),
-                    0,
-                ])?;
-            }
-        };
-
-        // Finish key binding
-        self.send(&[0xaa, 0xaa, 0, 0, 0, 0, 0, 0])?;
-
-        Ok(())
+    fn map_key(&mut self, _layer: u8, _key_num: u8, _key: String) -> Result<()> {
+        unimplemented!("i do not have this macropad to test on");
     }
 
     fn set_led(&mut self, n: u8, _color: LedColor) -> Result<()> {

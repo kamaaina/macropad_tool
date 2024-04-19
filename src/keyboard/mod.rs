@@ -6,7 +6,7 @@ use crate::parse;
 
 use std::{fmt::Display, str::FromStr};
 
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{ensure, Result};
 use enumset::{EnumSet, EnumSetType};
 use log::debug;
 use num_derive::{FromPrimitive, ToPrimitive};
@@ -17,7 +17,6 @@ use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 use itertools::Itertools as _;
 
 pub trait Keyboard {
-    fn bind_key(&mut self, layer: u8, key: Key, expansion: &Macro) -> Result<()>;
     fn map_key(&mut self, layer: u8, key_num: u8, key: String) -> Result<()>;
     fn set_led(&mut self, n: u8, color: LedColor) -> Result<()>;
 
@@ -89,42 +88,6 @@ pub enum KnobAction {
     Press,
     #[strum(serialize = "cw")]
     RotateCW,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Key {
-    Button(u8),
-    #[allow(unused)]
-    Knob(u8, KnobAction),
-}
-
-impl Display for Key {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Button(n) => write!(f, "button {}", n),
-            Self::Knob(n, action) => write!(f, "knob {} {}", n, action),
-        }
-    }
-}
-
-impl Key {
-    fn to_key_id_12(self) -> Result<u8> {
-        match self {
-            Key::Button(n) if n >= 12 => Err(anyhow!("invalid key index")),
-            Key::Button(n) => Ok(n + 1),
-            Key::Knob(n, _) if n >= 3 => Err(anyhow!("invalid knob index")),
-            Key::Knob(n, action) => Ok(13 + 3 * n + (action as u8)),
-        }
-    }
-
-    fn to_key_id_16(self) -> Result<u8> {
-        match self {
-            Key::Button(n) if n >= 16 => Err(anyhow!("invalid key index")),
-            Key::Button(n) => Ok(n + 1),
-            Key::Knob(n, _) if n >= 3 => Err(anyhow!("invalid knob index")),
-            Key::Knob(n, action) => Ok(16 + 3 * n + (action as u8)),
-        }
-    }
 }
 
 #[derive(
@@ -208,15 +171,6 @@ impl FromStr for Code {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         parse::from_str(parse::code, s)
-    }
-}
-
-impl Code {
-    pub fn value(self) -> u8 {
-        match self {
-            Self::WellKnown(code) => code as u8,
-            Self::Custom(code) => code,
-        }
     }
 }
 
@@ -463,16 +417,6 @@ pub enum Macro {
     Media(MediaCode),
     #[allow(unused)]
     Mouse(MouseEvent),
-}
-
-impl Macro {
-    fn kind(&self) -> u8 {
-        match self {
-            Macro::Keyboard(_) => 1,
-            Macro::Media(_) => 2,
-            Macro::Mouse(_) => 3,
-        }
-    }
 }
 
 impl FromStr for Macro {

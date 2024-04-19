@@ -1,13 +1,10 @@
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use log::debug;
 use rusb::{Context, DeviceHandle};
 
-use crate::{
-    consts,
-    messages::{self, Messages},
-};
+use crate::messages::{self, Messages};
 
-use super::{Key, Keyboard, LedColor, Macro, MouseAction, MouseEvent};
+use super::{Keyboard, LedColor};
 
 pub struct Keyboard884x {
     handle: DeviceHandle<Context>,
@@ -20,64 +17,6 @@ impl Keyboard for Keyboard884x {
         debug!("layer: {layer} key_num: {key_num} key_chord: {key_chord}");
         let msg = Messages::build_key_msg(key_chord, layer, key_num, 0)?;
         self.send(&msg)?;
-        Ok(())
-    }
-
-    fn bind_key(&mut self, layer: u8, key: Key, expansion: &Macro) -> Result<()> {
-        ensure!(layer <= 15, "invalid layer index");
-
-        debug!("bind {} on layer {} to {}", key, layer, expansion);
-
-        let mut msg = vec![
-            0x03,
-            0xfd,
-            key.to_key_id_16()?,
-            layer + 1,
-            expansion.kind(),
-            0,
-            0,
-            0,
-            0,
-            0,
-        ];
-
-        match expansion {
-            Macro::Keyboard(presses) => {
-                ensure!(
-                    presses.len() <= consts::MAX_KEY_PRESSES,
-                    "macro sequence is too long"
-                );
-                // For whatever reason empty key is added before others.
-                let iter = presses.iter().map(|accord| {
-                    (
-                        accord.modifiers.as_u8(),
-                        accord.code.map_or(0, |c| c.value()),
-                    )
-                });
-
-                msg.extend_from_slice(&[presses.len() as u8]);
-                for (modifiers, code) in iter {
-                    msg.extend_from_slice(&[modifiers, code]);
-                }
-            }
-            Macro::Media(code) => {
-                let [low, high] = (*code as u16).to_le_bytes();
-                msg.extend_from_slice(&[0, low, high, 0, 0, 0, 0]);
-            }
-            Macro::Mouse(MouseEvent(MouseAction::Click(buttons), _)) => {
-                ensure!(!buttons.is_empty(), "buttons must be given for click macro");
-                msg.extend_from_slice(&[0x01, 0, buttons.as_u8()]);
-            }
-            Macro::Mouse(MouseEvent(MouseAction::WheelUp, modifier)) => {
-                msg.extend_from_slice(&[0x03, modifier.map_or(0, |m| m as u8), 0, 0, 0, 0x1]);
-            }
-            Macro::Mouse(MouseEvent(MouseAction::WheelDown, modifier)) => {
-                msg.extend_from_slice(&[0x03, modifier.map_or(0, |m| m as u8), 0, 0, 0, 0xff]);
-            }
-        };
-
-        self.send(&msg)?;
-
         Ok(())
     }
 
