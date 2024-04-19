@@ -268,18 +268,20 @@ fn main() -> Result<()> {
 }
 
 pub fn get_position(mp: &Macropad, key_num: u8) -> Result<(usize, usize)> {
-    let mut row = 0;
-    let mut col;
+    let cols = mp.device.cols;
+    let col;
+    let mut row;
 
-    if key_num > mp.device.cols {
-        col = key_num % mp.device.cols;
-        row = key_num / mp.device.cols;
-        if col > 0 {
-            col -= 1;
-        } else {
-            row = (key_num / mp.device.cols) - 1;
-            col = 3;
+    if key_num % cols == 0 {
+        row = key_num / cols;
+        if row > 0 {
+            row -= 1;
         }
+    } else {
+        row = key_num / cols;
+    }
+    if key_num > cols {
+        col = key_num % cols;
     } else {
         col = key_num - 1;
     }
@@ -288,7 +290,7 @@ pub fn get_position(mp: &Macropad, key_num: u8) -> Result<(usize, usize)> {
 
 pub fn guestimate_rows_cols(num_keys: u8) -> Result<(u8, u8)> {
     match num_keys {
-        6 => Ok((3, 2)),
+        6 => Ok((2, 3)),
         9 => Ok((3, 3)),
         12 => Ok((3, 4)),
         _ => Err(anyhow!("unable to guess rows/cols for {num_keys}")),
