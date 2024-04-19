@@ -100,7 +100,7 @@ impl Messages {
             let mut m_c = 0x00u8;
             let mut wkk = 0x00;
             for key in kc {
-                println!("=> {key}");
+                debug!("=> {key}");
                 if let Ok(m) = Modifier::from_str(&key) {
                     let power = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
                     m_c = 0u32.pow(power as u32) as u8;
@@ -121,7 +121,7 @@ impl Messages {
                         "mclick" => {
                             mouse_click = 0x04;
                         }
-                        _ => panic!("should not get here!"),
+                        _ => panic!("invaid mouse click!"),
                     }
                     msg[4] = 0x03;
                 } else if let Ok(a) = MouseAction::from_str(&key) {
@@ -133,7 +133,7 @@ impl Messages {
                         "wheeldown" => {
                             mouse_action = 0xff;
                         }
-                        _ => panic!("should not get here!"),
+                        _ => panic!("invalid mouse scroll!"),
                     }
                     msg[4] = 0x03;
                 }

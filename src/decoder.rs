@@ -1,5 +1,6 @@
-use crate::keyboard::{MediaCode, Modifier, Modifiers, MouseAction, WellKnownCode};
+use crate::keyboard::{MediaCode, WellKnownCode};
 use anyhow::{anyhow, Result};
+use log::debug;
 use num::FromPrimitive;
 
 pub struct Decoder {}
@@ -97,8 +98,6 @@ impl Decoder {
             // TODO: is it possible to make a binding like wheelup-a? doesn't make much sense
             //       but might need to add support for that. currently, not supported
 
-            // FIXME: add support for modifier key
-
             return Ok(KeyMapping {
                 delay: u16::from_be_bytes([buf[5], buf[6]]),
                 layer: buf[3],
@@ -133,7 +132,7 @@ impl Decoder {
                 break;
             }
 
-            // TODO: get the mapping
+            // get the mapping
             let result = val.unwrap();
             let mut key_str = Self::modifier_to_str(result.modifier);
             if result.wkc.is_some() {
@@ -160,7 +159,7 @@ impl Decoder {
 
     fn get_key(buf: &[u8]) -> Option<KeyCode> {
         let val = u16::from_be_bytes([buf[0], buf[1]]);
-        //println!("val: 0x{:02x}", val);
+        debug!("val: 0x{:02x}", val);
         if val == 0 {
             return None;
         }
@@ -248,43 +247,15 @@ impl Decoder {
             }
         }
 
-        //println!("modifier: {retval}");
         retval
     }
 }
-
-// enum stuff - https://enodev.fr/posts/rusticity-convert-an-integer-to-an-enum.html
-
-// macropad device probe response - 6 button 1 encoder
-// 03fb060100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-
-// layer 2
-// key 16 = left arrow
-// 03fa100201000000000001005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 17 = enter
-// 03fa110201000000000001002800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 18 = right arrow
-// 03fa120201000000000001004f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 // layer 3
 // key 1 = play/pause
 // 03fa010302000000000001cd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 // key 2 = next track
 // 03fa020302000000000001b50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 3 = mute
-// 03fa030302000000000001e20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 4 = 3
-// 03fa040301000000000001002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 5 = 4
-// 03fa050301000000000001002100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 6 = 5
-// 03fa060301000000000001002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 16 = volume -
-// 03fa100302000000000001ea0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 17 = mute
-// 03fa110302000000000001e20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 18 = volume +
-// 03fa120302000000000001e90000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 // program key
 // layer 1 4 keys (abcd)
@@ -305,8 +276,6 @@ mod tests {
     use crate::keyboard::{Modifier, Modifiers};
     use anyhow::Result;
     use num::FromPrimitive;
-
-    // cargo test -- --nocapture
 
     #[test]
     fn foo() {
@@ -358,9 +327,6 @@ mod tests {
         assert_eq!(key.keys.len(), 1);
         assert_eq!(key.keys[0], "ctrl-a");
 
-        // layer = 1
-        // key = 2
-        // mapping = alt+shift
         msg = vec![
             0x03, 0xfa, 0x02, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x06, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -375,9 +341,6 @@ mod tests {
         assert_eq!(key.keys.len(), 1);
         assert_eq!(key.keys[0], "shift-alt");
 
-        // layer = 1
-        // key = 3
-        // mapping = ctrl+alt+b
         msg = vec![
             0x03, 0xfa, 0x03, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x05, 0x05, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -392,11 +355,6 @@ mod tests {
         assert_eq!(key.keys.len(), 1);
         assert_eq!(key.keys[0], "ctrl-alt-b");
 
-        //==============================
-
-        // layer = 1
-        // key = 4
-        // mapping = null
         msg = vec![
             0x03, 0xfa, 0x04, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -410,9 +368,6 @@ mod tests {
         println!("{:?}", key);
         assert_eq!(key.keys.len(), 0);
 
-        // layer = 1
-        // key = 5
-        // mapping = k
         msg = vec![
             0x03, 0xfa, 0x05, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x05, 0x0e, 0x05,
             0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -428,9 +383,6 @@ mod tests {
         assert_eq!(key.keys[0], "ctrl-alt-k");
         assert_eq!(key.keys[1], "ctrl-alt-a");
 
-        // layer = 1
-        // key = 6
-        // mapping = l
         msg = vec![
             0x03, 0xfa, 0x06, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x0f, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -444,9 +396,6 @@ mod tests {
         println!("{:?}", key);
         assert_eq!(key.keys[0], "l");
 
-        // layer = 1
-        // key = 16
-        // mapping = mouse wheel +
         msg = vec![
             0x03, 0xfa, 0x10, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
             0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -460,9 +409,6 @@ mod tests {
         println!("{:?}", key);
         assert_eq!(key.keys[0], "wheelup");
 
-        // layer = 1
-        // key = 16
-        // mapping = mouse left click
         msg = vec![
             0x03, 0xfa, 0x11, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x01, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -476,9 +422,6 @@ mod tests {
         println!("{:?}", key);
         assert_eq!(key.keys[0], "click");
 
-        // layer = 1
-        // key = 16
-        // mapping = mouse wheel -
         msg = vec![
             0x03, 0xfa, 0x12, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
             0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -492,8 +435,6 @@ mod tests {
         println!("{:?}", key);
         assert_eq!(key.keys[0], "wheeldown");
 
-        // ctrl-wheelup
-        // 03 fa 13 01 03 00 00 00 00 00 04 01 00 00 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         msg = vec![
             0x03, 0xfa, 0x13, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00,
             0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -507,8 +448,6 @@ mod tests {
         println!("{:?}", key);
         assert_eq!(key.keys[0], "ctrl-wheelup");
 
-        // ctrl-wheeldown
-        // 03 fa 15 01 03 00 00 00 00 00 04 01 00 00 00 ff 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         msg = vec![
             0x03, 0xfa, 0x13, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00,
             0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -522,8 +461,6 @@ mod tests {
         println!("{:?}", key);
         assert_eq!(key.keys[0], "ctrl-wheeldown");
 
-        // key 16 = volume -
-        // 03 fa 10 03 02 00 00 00 00 00 01 ea 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         msg = vec![
             0x03, 0xfa, 0x10, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xea, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -537,8 +474,6 @@ mod tests {
         println!("{:?}", key);
         assert_eq!(key.keys[0], "volumedown");
 
-        // key 17 = mute
-        // 03 fa 11 03 02 00 00 00 00 00 01 e2 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         msg = vec![
             0x03, 0xfa, 0x11, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xe2, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -551,9 +486,6 @@ mod tests {
         assert_eq!(key.layer, 3);
         println!("{:?}", key);
         assert_eq!(key.keys[0], "mute");
-
-        // key 18 = volume +
-        // 03fa120302000000000001e90000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
         Ok(())
     }
