@@ -59,6 +59,8 @@ impl Decoder {
             let mut key_str = Self::modifier_to_str(result.modifier);
             */
 
+            // mouse wheel
+
             // mouse click
             let mut click_type = String::new();
             match buf[12] {
@@ -66,7 +68,7 @@ impl Decoder {
                 0x02 => click_type = "rclick".to_string(),
                 0x03 => click_type = "mclick".to_string(),
                 _ => {
-                    println!("Unknown - have not seen this case before")
+                    println!("Unknown - have not seen this case before - {}", buf[12])
                 }
             }
 
@@ -468,6 +470,26 @@ mod tests {
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
         assert_eq!(key.keys[0], "wheeldown");
+
+        /*
+        // ctrl-mouseup
+        // 03 fa 13 01 03 00 00 00 00 00 04 01 00 00 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        msg = vec![
+            0x03, 0xfa, 0x13, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        println!("\ntest 10");
+        key = Decoder::get_key_mapping(&msg)?;
+        assert_eq!(key.layer, 1);
+        println!("{:?}", key);
+        assert_eq!(key.keys[0], "wheeldown");
+        */
+
+        // ctrl-mousedown
+        // 03fa15010300000000000401000000ff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
         Ok(())
     }
