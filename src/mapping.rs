@@ -8,6 +8,24 @@ pub struct Macropad {
     pub layers: Vec<Layer>,
 }
 
+impl Macropad {
+    pub fn new(rows: u8, cols: u8, knobs: u8) -> Self {
+        Self {
+            device: Device {
+                orientation: "normal".to_string(),
+                rows,
+                cols,
+                knobs,
+            },
+            layers: vec![
+                Layer::new(rows, cols, knobs),
+                Layer::new(rows, cols, knobs),
+                Layer::new(rows, cols, knobs),
+            ],
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Device {
     pub orientation: String,
@@ -20,6 +38,25 @@ pub struct Device {
 pub struct Layer {
     pub buttons: Vec<Vec<String>>,
     pub knobs: Vec<Knob>,
+}
+
+impl Layer {
+    pub fn new(rows: u8, cols: u8, num_knobs: u8) -> Self {
+        let mut buttons = Vec::new();
+        for _i in 0..rows {
+            buttons.push(vec![String::new(); cols.into()]);
+        }
+
+        let mut knobs = Vec::new();
+        for _i in 0..num_knobs {
+            knobs.push(Knob {
+                ccw: String::new(),
+                press: String::new(),
+                cw: String::new(),
+            });
+        }
+        Self { buttons, knobs }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

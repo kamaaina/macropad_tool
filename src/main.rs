@@ -12,6 +12,7 @@ use crate::decoder::KeyMapping;
 use crate::keyboard::{
     k884x, k8880, Keyboard, MediaCode, Modifier, MouseAction, MouseButton, WellKnownCode,
 };
+use crate::mapping::Macropad;
 use crate::messages::Messages;
 use crate::options::Options;
 use crate::options::{Command, LedCommand};
@@ -210,13 +211,94 @@ fn main() -> Result<()> {
             }
 
             // process responses from device
+            let rows_cols = guestimate_rows_cols(device_info.num_keys)?;
+            let mut mp = Macropad::new(rows_cols.0, rows_cols.1, device_info.num_encoders);
+            let mut knob_idx = 0;
+            let mut knob_type = 0;
+            let mut last_layer = 0;
             for km in mappings {
                 println!("{:?}", km);
+                if km.layer != last_layer {
+                    last_layer = km.layer;
+                    knob_idx = 0;
+                    knob_type = 0;
+                }
+
+                if km.key_number <= mp.device.rows * mp.device.cols {
+                    // button mappings
+                    let row_col = get_position(&mp, km.key_number)?;
+                    println!(
+                        "   key: {} at row: {} col: {}",
+                        km.key_number, row_col.0, row_col.1
+                    );
+                    mp.layers[(km.layer - 1) as usize].buttons[row_col.0][row_col.1] =
+                        km.keys.join("-");
+                } else {
+                    // knobs
+                    println!("knob idx: {} knob type: {}", knob_idx, knob_type);
+                    match knob_type {
+                        0 => {
+                            mp.layers[(km.layer - 1) as usize].knobs[knob_idx].ccw =
+                                km.keys.join("-");
+                            knob_type += 1;
+                        }
+                        1 => {
+                            mp.layers[(km.layer - 1) as usize].knobs[knob_idx].press =
+                                km.keys.join("-");
+                            knob_type += 1;
+                        }
+                        2 => {
+                            mp.layers[(km.layer - 1) as usize].knobs[knob_idx].cw =
+                                km.keys.join("-");
+                            knob_type = 0;
+                            knob_idx += 1;
+                        }
+                        _ => {
+                            panic!("should not get here!")
+                        }
+                    }
+                }
             }
+            println!("mp: {:?}", mp);
+            Mapping::print(mp);
         }
     }
 
     Ok(())
+}
+
+pub fn get_position(mp: &Macropad, key_num: u8) -> Result<(usize, usize)> {
+    let cols = mp.device.cols;
+    let mut col;
+    let mut row;
+
+    if key_num % cols == 0 {
+        row = key_num / cols;
+        if row > 0 {
+            row -= 1;
+        }
+    } else {
+        row = key_num / cols;
+    }
+    if key_num > cols {
+        col = key_num % cols;
+        if col == 0 {
+            col = cols;
+        }
+        col -= 1;
+    } else {
+        col = key_num - 1;
+    }
+    Ok((row.into(), col.into()))
+}
+
+pub fn guestimate_rows_cols(num_keys: u8) -> Result<(u8, u8)> {
+    match num_keys {
+        6 => Ok((2, 3)),
+        9 => Ok((3, 3)),
+        12 => Ok((3, 4)),
+        _ => Err(anyhow!("unable to guess rows/cols for {num_keys}")),
+    }
 }
 
 pub fn find_interface_and_endpoint(

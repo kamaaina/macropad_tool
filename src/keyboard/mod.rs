@@ -163,7 +163,17 @@ pub enum Modifier {
 pub type Modifiers = EnumSet<Modifier>;
 
 #[derive(
-    Debug, ToPrimitive, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, EnumMessage, Display,
+    Debug,
+    FromPrimitive,
+    ToPrimitive,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    EnumString,
+    EnumIter,
+    EnumMessage,
+    Display,
 )]
 #[repr(u16)]
 #[strum(serialize_all = "lowercase")]
