@@ -4,6 +4,7 @@ use num::FromPrimitive;
 
 pub struct Decoder {}
 
+#[derive(Debug)]
 pub struct KeyCode {
     modifier: u8,
     media_code: Option<MediaCode>,
@@ -48,16 +49,6 @@ impl Decoder {
 
         // can we do this or should we check if bit 0 and bit 1 is set?
         if buf[4] == 0x03 {
-            /*
-            let mut result: KeyCode;
-            let val = Self::get_key(&[buf[10], buf[11]]);
-            if val.is_some() {
-                result = val.unwrap();
-                println!("mouse modifier value: {:?}", &result.modifier);
-            }
-            let mut key_str = Self::modifier_to_str(result.modifier);
-            */
-
             // mouse wheel
             let mut wheel_mapping = String::new();
             if buf[10] == 0x04 {
@@ -66,6 +57,7 @@ impl Decoder {
                     let result = mod_key.unwrap();
                     wheel_mapping = Self::modifier_to_str(result.modifier);
                 }
+            } else if buf[10] == 0x01 {
             }
 
             // mouse click
@@ -113,7 +105,27 @@ impl Decoder {
                 key_number: buf[2],
                 keys: key_press,
             });
-        }
+        } // end buf[4] == 0x03 (Mouse)
+
+        // Multimedia
+        if buf[4] == 0x02 {
+            let mut tmp = vec![0u8, 2];
+            tmp[1] = buf[i];
+
+            let val = Self::get_key(&tmp);
+
+            let result = val.unwrap();
+            //println!("result: {:?}", result);
+            let mut key_str = Self::modifier_to_str(result.modifier);
+            if result.media_code.is_some() {
+                if key_str.len() > 0 {
+                    key_str += "-";
+                }
+                key_str += &result.media_code.unwrap().to_string();
+            }
+            key_press.push(key_str);
+            i += 1;
+        } // end buf[4] == 0x02 (Multimedia)
 
         loop {
             let val = Self::get_key(&[buf[i], buf[i + 1]]);
@@ -155,13 +167,15 @@ impl Decoder {
 
         // get the key combination
         let mut da_key = None;
+        let mut mc_key = None;
         if buf[1] > 0 {
-            da_key = Some(<WellKnownCode as FromPrimitive>::from_u32(buf[1].into()))?;
+            da_key = Some(<WellKnownCode as FromPrimitive>::from_u8(buf[1].into()))?;
+            mc_key = Some(<MediaCode as FromPrimitive>::from_u8(buf[1].into()))?;
         }
 
         Some(KeyCode {
             modifier: buf[0],
-            media_code: None,
+            media_code: mc_key,
             wkc: da_key,
         })
     }
@@ -507,6 +521,39 @@ mod tests {
         assert_eq!(key.layer, 1);
         println!("{:?}", key);
         assert_eq!(key.keys[0], "ctrl-wheeldown");
+
+        // key 16 = volume -
+        // 03 fa 10 03 02 00 00 00 00 00 01 ea 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        msg = vec![
+            0x03, 0xfa, 0x10, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xea, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        println!("\ntest 12");
+        key = Decoder::get_key_mapping(&msg)?;
+        assert_eq!(key.layer, 3);
+        println!("{:?}", key);
+        assert_eq!(key.keys[0], "volumedown");
+
+        // key 17 = mute
+        // 03 fa 11 03 02 00 00 00 00 00 01 e2 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        msg = vec![
+            0x03, 0xfa, 0x11, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xe2, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        println!("\ntest 13");
+        key = Decoder::get_key_mapping(&msg)?;
+        assert_eq!(key.layer, 3);
+        println!("{:?}", key);
+        assert_eq!(key.keys[0], "mute");
+
+        // key 18 = volume +
+        // 03fa120302000000000001e90000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
         Ok(())
     }
