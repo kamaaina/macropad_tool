@@ -303,4 +303,20 @@ mod tests {
         assert_eq!(msg[12], 0x13, "checking byte 12");
         Ok(())
     }
+
+    #[test]
+    fn win_enter() -> anyhow::Result<()> {
+        // 03 fd 11 03 01 00 00 00      00 00 01 08 28 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let msg = Messages::build_key_msg("win-enter".to_string(), 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x01, "checking byte 4");
+        for i in 5..=9 {
+            assert_eq!(msg[i], 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x08, "checking byte 11");
+        assert_eq!(msg[12], 0x28, "checking byte 12");
+        Ok(())
+    }
 }
