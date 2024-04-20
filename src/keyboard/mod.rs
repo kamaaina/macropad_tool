@@ -2,16 +2,15 @@ pub(crate) mod k884x;
 pub(crate) mod k8880;
 
 use crate::consts;
-use crate::parse;
+//use crate::parse;
 
-use std::{fmt::Display, str::FromStr};
+use std::fmt::Display;
 
 use anyhow::{ensure, Result};
 use enumset::{EnumSet, EnumSetType};
 use log::debug;
 use num_derive::{FromPrimitive, ToPrimitive};
 use rusb::{Context, DeviceHandle, Error::Timeout};
-use serde_with::DeserializeFromStr;
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 
 use itertools::Itertools as _;
@@ -145,35 +144,6 @@ pub enum MediaCode {
     ScreenLock = 0x19e,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Code {
-    WellKnown(WellKnownCode),
-    Custom(u8),
-}
-
-impl Display for Code {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Code::WellKnown(code) => write!(f, "{}", code),
-            Code::Custom(code) => write!(f, "<{}>", code),
-        }
-    }
-}
-
-impl From<WellKnownCode> for Code {
-    fn from(code: WellKnownCode) -> Self {
-        Self::WellKnown(code)
-    }
-}
-
-impl FromStr for Code {
-    type Err = nom::error::Error<String>;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        parse::from_str(parse::code, s)
-    }
-}
-
 #[derive(
     Debug, ToPrimitive, FromPrimitive, Clone, Copy, PartialEq, Eq, EnumString, EnumIter, Display,
 )]
@@ -305,51 +275,6 @@ pub enum WellKnownCode {
     F24,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, DeserializeFromStr)]
-pub struct Accord {
-    pub modifiers: Modifiers,
-    pub code: Option<Code>,
-}
-
-impl Accord {
-    pub fn new<M>(modifiers: M, code: Option<Code>) -> Self
-    where
-        M: Into<Modifiers>,
-    {
-        Self {
-            modifiers: modifiers.into(),
-            code,
-        }
-    }
-}
-
-impl From<(Modifiers, Option<Code>)> for Accord {
-    fn from((modifiers, code): (Modifiers, Option<Code>)) -> Self {
-        Self { modifiers, code }
-    }
-}
-
-impl FromStr for Accord {
-    type Err = nom::error::Error<String>;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        parse::from_str(parse::accord, s)
-    }
-}
-
-impl Display for Accord {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.modifiers.iter().format("-"))?;
-        if let Some(code) = self.code {
-            if !self.modifiers.is_empty() {
-                write!(f, "-")?;
-            }
-            write!(f, "{}", code)?;
-        }
-        Ok(())
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 #[repr(u8)]
@@ -407,38 +332,5 @@ impl Display for MouseEvent {
         }
         write!(f, "{}", action)?;
         Ok(())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, DeserializeFromStr)]
-pub enum Macro {
-    Keyboard(Vec<Accord>),
-    #[allow(unused)]
-    Media(MediaCode),
-    #[allow(unused)]
-    Mouse(MouseEvent),
-}
-
-impl FromStr for Macro {
-    type Err = nom::error::Error<String>;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        parse::from_str(parse::r#macro, s)
-    }
-}
-
-impl Display for Macro {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Macro::Keyboard(accords) => {
-                write!(f, "{}", accords.iter().format(","))
-            }
-            Macro::Media(code) => {
-                write!(f, "{}", code)
-            }
-            Macro::Mouse(event) => {
-                write!(f, "{}", event)
-            }
-        }
     }
 }
