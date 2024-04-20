@@ -359,7 +359,7 @@ pub enum MouseModifier {
     Alt = 0x04,
 }
 
-#[derive(EnumString, Debug, EnumSetType, EnumIter, Display)]
+#[derive(ToPrimitive, EnumString, Debug, EnumSetType, EnumIter, Display)]
 pub enum MouseButton {
     #[strum(serialize = "click")]
     Left,

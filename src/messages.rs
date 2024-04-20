@@ -111,29 +111,15 @@ impl Messages {
                     msg[4] = 0x02;
                     msg[10] = 0x02;
                 } else if let Ok(a) = MouseButton::from_str(&key) {
-                    match a.to_string().as_str() {
-                        "click" => {
-                            mouse_click = 0x01;
-                        }
-                        "rclick" => {
-                            mouse_click = 0x02;
-                        }
-                        "mclick" => {
-                            mouse_click = 0x04;
-                        }
-                        _ => panic!("invaid mouse click!"),
-                    }
+                    mouse_click =
+                        2u32.pow(<MouseButton as ToPrimitive>::to_u8(&a).unwrap().into()) as u8;
                     msg[4] = 0x03;
                 } else if let Ok(a) = MouseAction::from_str(&key) {
                     m_c = 0x01;
-                    match a.to_string().as_str() {
-                        "wheelup" => {
-                            mouse_action = 0x01;
-                        }
-                        "wheeldown" => {
-                            mouse_action = 0xff;
-                        }
-                        _ => panic!("invalid mouse scroll!"),
+                    match a {
+                        MouseAction::WheelUp => mouse_action = 0x01,
+                        MouseAction::WheelDown => mouse_action = 0xff,
+                        _ => (),
                     }
                     msg[4] = 0x03;
                 }
