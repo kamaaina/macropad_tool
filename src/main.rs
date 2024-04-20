@@ -273,9 +273,7 @@ pub fn get_position(mp: &Macropad, key_num: u8) -> Result<(usize, usize)> {
 
     if key_num % cols == 0 {
         row = key_num / cols;
-        if row > 0 {
-            row -= 1;
-        }
+        row = row.saturating_sub(1);
     } else {
         row = key_num / cols;
     }

@@ -108,7 +108,7 @@ impl Mapping {
         // check orientation
         Orientation::from_str(&Self::uppercase_first(&cfg.device.orientation))?;
 
-        if cfg.layers.len() == 0 || cfg.layers.len() > 3 {
+        if cfg.layers.is_empty() || cfg.layers.len() > 3 {
             return Err(anyhow!("number of layers must be > 0 and < 4"));
         }
 
@@ -192,7 +192,7 @@ impl Mapping {
         Ok(())
     }
 
-    fn validate_key_mapping(key: &String) -> Result<()> {
+    fn validate_key_mapping(key: &str) -> Result<()> {
         // ensure we don't go over max
         let keys: Vec<_> = key.split(',').collect();
         if keys.len() > consts::MAX_KEY_PRESSES {
@@ -253,35 +253,35 @@ impl Mapping {
         result
     }
 
-    fn is_modifier_key(keystr: &String) -> bool {
-        let ck = Modifier::from_str(&keystr);
+    fn is_modifier_key(keystr: &str) -> bool {
+        let ck = Modifier::from_str(keystr);
         if ck.is_ok() {
             return true;
         }
         false
     }
 
-    fn is_media_key(keystr: &String) -> bool {
-        let mk = MediaCode::from_str(&keystr);
+    fn is_media_key(keystr: &str) -> bool {
+        let mk = MediaCode::from_str(keystr);
         if mk.is_ok() {
             return true;
         }
         false
     }
 
-    fn is_regular_key(keystr: &String) -> bool {
-        let rk = WellKnownCode::from_str(&keystr);
+    fn is_regular_key(keystr: &str) -> bool {
+        let rk = WellKnownCode::from_str(keystr);
         if rk.is_ok() {
             return true;
         }
         false
     }
 
-    fn is_mouse_action(keystr: &String) -> bool {
-        match keystr.to_lowercase().as_str() {
-            "wheelup" | "wheeldown" | "click" | "mclick" | "rclick" => true,
-            _ => false,
-        }
+    fn is_mouse_action(keystr: &str) -> bool {
+        matches!(
+            keystr.to_lowercase().as_str(),
+            "wheelup" | "wheeldown" | "click" | "mclick" | "rclick"
+        )
     }
 }
 

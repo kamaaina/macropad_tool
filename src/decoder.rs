@@ -63,7 +63,7 @@ impl Decoder {
 
             // mouse click
             let mut click_type = wheel_mapping;
-            if click_type.len() > 0 {
+            if !click_type.is_empty() {
                 click_type += "-";
             }
             match buf[12] {
@@ -80,13 +80,13 @@ impl Decoder {
             let mut key_str = click_type;
             match buf[15] {
                 0x01 => {
-                    if key_str.len() > 0 {
+                    if !key_str.is_empty() {
                         key_str += "-";
                     }
                     key_str += "wheelup";
                 }
                 0xFF => {
-                    if key_str.len() > 0 {
+                    if !key_str.is_empty() {
                         key_str += "-";
                     }
                     key_str += "wheeldown";
@@ -117,7 +117,7 @@ impl Decoder {
             //println!("result: {:?}", result);
             let mut key_str = Self::modifier_to_str(result.modifier);
             if result.media_code.is_some() {
-                if key_str.len() > 0 {
+                if !key_str.is_empty() {
                     key_str += "-";
                 }
                 key_str += &result.media_code.unwrap().to_string();
@@ -137,7 +137,7 @@ impl Decoder {
             let mut key_str = Self::modifier_to_str(result.modifier);
             if result.wkc.is_some() {
                 //println!("WKC!!!!");
-                if key_str.len() > 0 {
+                if !key_str.is_empty() {
                     key_str += "-";
                 }
                 key_str += &result.wkc.unwrap().to_string();
@@ -168,8 +168,8 @@ impl Decoder {
         let mut da_key = None;
         let mut mc_key = None;
         if buf[1] > 0 {
-            da_key = Some(<WellKnownCode as FromPrimitive>::from_u8(buf[1].into()))?;
-            mc_key = Some(<MediaCode as FromPrimitive>::from_u8(buf[1].into()))?;
+            da_key = Some(<WellKnownCode as FromPrimitive>::from_u8(buf[1]))?;
+            mc_key = Some(<MediaCode as FromPrimitive>::from_u8(buf[1]))?;
         }
 
         Some(KeyCode {

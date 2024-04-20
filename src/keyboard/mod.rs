@@ -28,8 +28,7 @@ pub trait Keyboard {
         debug!("msg: {:02x?}", msg);
         let written = self.get_handle().write_interrupt(
             self.get_out_endpoint(),
-            //&buf,
-            &msg,
+            msg,
             consts::DEFAULT_TIMEOUT,
         )?;
         ensure!(written == msg.len(), "not all data written");

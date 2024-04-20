@@ -101,20 +101,20 @@ impl Messages {
             let mut wkk = 0x00;
             for key in kc {
                 debug!("=> {key}");
-                if let Ok(m) = Modifier::from_str(&key) {
+                if let Ok(m) = Modifier::from_str(key) {
                     let power = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
                     m_c = 2u32.pow(power as u32) as u8;
-                } else if let Ok(w) = WellKnownCode::from_str(&key) {
+                } else if let Ok(w) = WellKnownCode::from_str(key) {
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
-                } else if let Ok(a) = MediaCode::from_str(&key) {
+                } else if let Ok(a) = MediaCode::from_str(key) {
                     m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
                     msg[4] = 0x02;
                     msg[10] = 0x02;
-                } else if let Ok(a) = MouseButton::from_str(&key) {
+                } else if let Ok(a) = MouseButton::from_str(key) {
                     mouse_click =
                         2u32.pow(<MouseButton as ToPrimitive>::to_u8(&a).unwrap().into()) as u8;
                     msg[4] = 0x03;
-                } else if let Ok(a) = MouseAction::from_str(&key) {
+                } else if let Ok(a) = MouseAction::from_str(key) {
                     m_c = 0x01;
                     match a {
                         MouseAction::WheelUp => mouse_action = 0x01,
