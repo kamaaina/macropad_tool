@@ -180,65 +180,30 @@ impl Decoder {
     }
 
     pub fn modifier_to_str(modifier: u8) -> String {
-        let mut retval = String::new();
+        let mut retval = Vec::new();
         for i in 0..=7 {
             if modifier >> i & 1 == 1 {
                 match i {
                     0 => {
-                        // left ctrl
-                        if retval.len() > 0 {
-                            retval += "-ctrl";
-                        } else {
-                            retval += "ctrl";
-                        }
+                        retval.push("ctrl");
                     }
                     1 => {
-                        // left shift
-                        if retval.len() > 0 {
-                            retval += "-shift";
-                        } else {
-                            retval += "shift";
-                        }
+                        retval.push("shift");
                     }
                     2 => {
-                        // left alt
-                        if retval.len() > 0 {
-                            retval += "-alt";
-                        } else {
-                            retval += "alt";
-                        }
+                        retval.push("alt");
                     }
                     3 => {
-                        // window key
-                        if retval.len() > 0 {
-                            retval += "-win";
-                        } else {
-                            retval += "win";
-                        }
+                        retval.push("win");
                     }
                     4 => {
-                        // right ctrl
-                        if retval.len() > 0 {
-                            retval += "-rctrl";
-                        } else {
-                            retval += "rctrl";
-                        }
+                        retval.push("rctrl");
                     }
                     5 => {
-                        // right shift
-                        if retval.len() > 0 {
-                            retval += "-rshift";
-                        } else {
-                            retval += "rshift";
-                        }
+                        retval.push("rshift");
                     }
                     6 => {
-                        // right alt
-                        if retval.len() > 0 {
-                            retval += "-ralt";
-                        } else {
-                            retval += "ralt";
-                        }
+                        retval.push("ralt");
                     }
                     _ => {
                         break;
@@ -247,7 +212,7 @@ impl Decoder {
             }
         }
 
-        retval
+        retval.join("-")
     }
 }
 
