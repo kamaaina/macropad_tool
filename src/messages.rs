@@ -103,7 +103,7 @@ impl Messages {
                 debug!("=> {key}");
                 if let Ok(m) = Modifier::from_str(&key) {
                     let power = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
-                    m_c = 0u32.pow(power as u32) as u8;
+                    m_c = 2u32.pow(power as u32) as u8;
                 } else if let Ok(w) = WellKnownCode::from_str(&key) {
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
                 } else if let Ok(a) = MediaCode::from_str(&key) {
@@ -285,6 +285,22 @@ mod tests {
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x00, "checking byte 11");
         assert_eq!(msg[12], 0x02, "checking byte 12");
+        Ok(())
+    }
+
+    #[test]
+    fn shift_p() -> anyhow::Result<()> {
+        // 03 fd 06 01 01 00 00 00      00 00 01 02 13 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let msg = Messages::build_key_msg("shift-p".to_string(), 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x01, "checking byte 4");
+        for i in 5..=9 {
+            assert_eq!(msg[i], 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x02, "checking byte 11");
+        assert_eq!(msg[12], 0x13, "checking byte 12");
         Ok(())
     }
 }

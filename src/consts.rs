@@ -22,4 +22,5 @@ pub const MAX_KEY_PRESSES: usize = 17;
 
 /// Maximum delay for a keypress
 ///
+#[allow(unused)]
 pub const MAX_DELAY: u16 = 6000;
