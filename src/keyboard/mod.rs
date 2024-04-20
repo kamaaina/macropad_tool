@@ -111,8 +111,6 @@ pub enum Modifier {
     RightWin,
 }
 
-pub type Modifiers = EnumSet<Modifier>;
-
 #[derive(
     Debug,
     FromPrimitive,

@@ -238,19 +238,7 @@ impl Decoder {
 mod tests {
 
     use crate::decoder::Decoder;
-    use crate::keyboard::{Modifier, Modifiers};
     use anyhow::Result;
-    use num::FromPrimitive;
-
-    #[test]
-    fn foo() {
-        let x: Modifiers = Modifier::Alt | Modifier::Ctrl;
-        println!("x: {}", x);
-        let val: u8 = 0xff;
-        let a = <Modifier as FromPrimitive>::from_u8(val);
-        println!("a: {a:?}");
-        assert_eq!(a, None);
-    }
 
     #[test]
     fn modifier_test() {
