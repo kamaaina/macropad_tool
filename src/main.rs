@@ -232,7 +232,7 @@ fn main() -> Result<()> {
                         km.key_number, row_col.0, row_col.1
                     );
                     mp.layers[(km.layer - 1) as usize].buttons[row_col.0][row_col.1] =
-                        km.keys.join("-");
+                        km.keys.join(",");
                 } else {
                     // knobs
                     debug!("knob idx: {} knob type: {}", knob_idx, knob_type);
