@@ -139,6 +139,8 @@ pub enum MediaCode {
     Favorites = 0x182,
     Calculator = 0x192,
     ScreenLock = 0x19e,
+    ScreenBrightnessUp = 0x6f,
+    ScreenBrightnessDown = 0x70,
 }
 
 #[derive(
