@@ -219,25 +219,56 @@ impl Keyboard8890 {
 
 #[cfg(test)]
 mod tests {
-    use crate::keyboard::{k8890::Keyboard8890, LedColor, Messages};
+    use crate::keyboard::{
+        k8890::{Keyboard8890, MsgType},
+        LedColor, Messages,
+    };
 
-    /*
     #[test]
     fn ctrl_a_ctrl_s() -> anyhow::Result<()> {
-        // ctrl-a,ctrl-s
-        // 03 fd 01 01 01 00 00 00     00 00 02 01 04 01 16 00   00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard8890::new(None, 0)?;
-        let msg = kbd.build_key_msg("ctrl-a,ctrl-s".to_string(), 1u8, 1u8, 0, 0)?;
+        let msg = kbd.build_key_msg(
+            "ctrl-a,ctrl-s".to_string(),
+            1u8,
+            1u8,
+            MsgType::KeyBeginProgram,
+            0,
+        )?;
+        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x00, 0x01];
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
-        assert_eq!(msg[10], 0x02, "checking number of keys to program");
-        assert_eq!(msg[11], 0x01, "checking for ctrl modifier");
-        assert_eq!(msg[12], 0x04, "checking for 'a' key");
-        assert_eq!(msg[13], 0x01, "checking for ctrl modifier");
-        assert_eq!(msg[14], 0x16, "checking for 's' key");
+        assert_eq!(&expected, &msg[..6], "checking message");
+
+        let msg = kbd.build_key_msg("ctrl-a".to_string(), 1u8, 1u8, MsgType::KeyProgram, 1)?;
+        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x01, 0x01, 0x04];
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(&expected, &msg[..7], "checking message");
+
+        let msg = kbd.build_key_msg("ctrl-s".to_string(), 1u8, 1u8, MsgType::KeyProgram, 1)?;
+        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x01, 0x01, 0x16];
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(&expected, &msg[..7], "checking message");
         Ok(())
     }
-    */
+
+    #[test]
+    fn a_key() -> anyhow::Result<()> {
+        let kbd = Keyboard8890::new(None, 0)?;
+        let msg = kbd.build_key_msg("a".to_string(), 1u8, 1u8, MsgType::KeyBeginProgram, 0)?;
+        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x00, 0x01];
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(&expected, &msg[..6], "checking message");
+        let msg = kbd.build_key_msg("a".to_string(), 1u8, 1u8, MsgType::KeyProgram, 1)?;
+
+        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x01, 0x00, 0x04];
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(&expected, &msg[..7], "checking message");
+        Ok(())
+    }
 
     #[test]
     fn led_mode2() -> anyhow::Result<()> {
