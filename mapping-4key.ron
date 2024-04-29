@@ -1,0 +1,16 @@
+(
+    device: (
+        orientation: "normal",
+        rows: 1,
+        cols: 4,
+        knobs: 0,
+    ),
+    layers: [
+        (
+            buttons: [
+                ["slash", "rclick", "ctrl-a,ctrl-s", "h,e,l,l,o"],
+            ],
+            knobs: [],
+        ),
+    ],
+)

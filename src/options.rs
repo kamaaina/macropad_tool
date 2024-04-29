@@ -84,17 +84,26 @@ pub enum Command {
 
 #[derive(Parser, Clone, Default, Debug)]
 pub struct LedCommand {
-    /// Index of LED mode (0-5 inclusive)
+    /// Index of LED modes
+    /// --------0x8840----------
     /// 0 - LEDs off
     /// 1 - backlight always on with LedColor
     /// 2 - no backlight, shock with LedColor when key pressed
     /// 3 - no backlight, shock2 when LedColor when key pressed
     /// 4 - no backlight, light up key with LedColor when pressed
     /// 5 - backlight white always on
+    /// --------0x8890---color is not supported-------
+    /// 0 - LEDs off
+    /// 1 - LED on for last pushed key
+    /// 2 - cycle through colors & buttons
     #[clap(verbatim_doc_comment)]
     pub index: u8,
 
+    // made this an option because the 884x supports color but the 8890
+    // does not. defaults to Red, but since the 8890 does not accept
+    // setting color, it just gets ignored
+    /// Note: Not applicable for product id 0x8890
     /// Color to apply with mode
-    #[arg(value_enum)]
-    pub led_color: LedColor,
+    #[arg(value_enum, verbatim_doc_comment)]
+    pub led_color: Option<LedColor>,
 }

@@ -3,24 +3,22 @@ mod consts;
 mod decoder;
 mod keyboard;
 mod mapping;
-mod messages;
 mod options;
 mod parse;
 
 use crate::consts::PRODUCT_IDS;
-use crate::decoder::KeyMapping;
 use crate::keyboard::{
-    k884x, k8880, Keyboard, MediaCode, Modifier, MouseAction, MouseButton, WellKnownCode,
+    k884x, k8890, Keyboard, MediaCode, Modifier, MouseAction, MouseButton, WellKnownCode,
 };
 use crate::mapping::Macropad;
-use crate::messages::Messages;
 use crate::options::Options;
 use crate::options::{Command, LedCommand};
 
 use anyhow::{anyhow, ensure, Result};
 use indoc::indoc;
 use itertools::Itertools;
-use log::{debug, info};
+use keyboard::LedColor;
+use log::debug;
 use mapping::Mapping;
 use rusb::{Context, Device, DeviceDescriptor, Direction, TransferType};
 
@@ -75,227 +73,36 @@ fn main() -> Result<()> {
             // load and validate mapping
             Mapping::validate(config_file)?;
             let config = Mapping::read(config_file);
-            let mut keyboard = open_keyboard(&options)?;
-
-            // ensure the config we have matches the connected device we want to program
-            let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
-
-            // get the type of device
-            let _ = keyboard.send(&messages::Messages::device_type());
-            let _ = keyboard.recieve(&mut buf);
-            let device_info = decoder::Decoder::get_device_info(&buf);
-            ensure!(
-                device_info.num_keys == (config.device.rows * config.device.cols)
-                    && device_info.num_encoders == config.device.knobs,
-                "Configuration file and macropad mismatch.\nLooks like you are trying to program a different macropad.\nDid you select the right configuration file?\n"
-            );
-
-            for (i, layer) in config.layers.iter().enumerate() {
-                let lyr = (i + 1) as u8;
-                let mut j = 1;
-                for row in &layer.buttons {
-                    for btn in row {
-                        debug!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, j);
-                        keyboard.map_key(lyr, j, btn.to_string())?;
-                        j += 1;
-                    }
-                }
-
-                // TODO: test 9x3 to see if the 3 knobs are top to bottom with key number
-                j = 0x10;
-                for knob in &layer.knobs {
-                    debug!("layer: {} key: 0x{:02x} knob cw {}", i + 1, j, knob.cw);
-                    keyboard.map_key(lyr, j, knob.cw.clone())?;
-                    j += 1;
-
-                    debug!(
-                        "layer: {} key: 0x{:02x} knob press {}",
-                        i + 1,
-                        j,
-                        knob.press
-                    );
-                    keyboard.map_key(lyr, j, knob.press.clone())?;
-                    j += 1;
-
-                    debug!("layer: {} key: 0x{:02x} knob ccw {}", i + 1, j, knob.ccw);
-                    keyboard.map_key(lyr, j, knob.ccw.clone())?;
-                    j += 1;
-                }
-            }
-            let _ = keyboard.send(&Messages::end_program());
+            let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
+            keyboard.program(&config).context("programming macropad")?;
             println!("デバイスのプログラミングが完了しました");
         }
 
         Command::Led(LedCommand { index, led_color }) => {
-            let mut keyboard = open_keyboard(&options)?;
-            keyboard.set_led(*index, *led_color)?;
-            let _ = keyboard.send(&Messages::end_program());
+            let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
+
+            // color is not supported on 0x8890 so don't require one to be passed
+            let color = if led_color.is_some() {
+                led_color.unwrap()
+            } else {
+                LedColor::Red
+            };
+            keyboard
+                .set_led(*index, color)
+                .context("programming LED on macropad")?;
         }
 
         Command::Read { layer } => {
             debug!("dev options: {:?}", options.devel_options);
-            let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
-            let mut keyboard = open_keyboard(&options)?;
-
-            // get the type of device
-            let _ = keyboard.send(&messages::Messages::device_type());
-            let _ = keyboard.recieve(&mut buf);
-            let device_info = decoder::Decoder::get_device_info(&buf);
-            info!(
-                "OUT: 0x{:02x} IN: 0x{:02x}",
-                keyboard.get_out_endpoint(),
-                keyboard.get_in_endpoint()
-            );
-            debug!(
-                "number of keys: {} number of rotary encoders: {}",
-                device_info.num_keys, device_info.num_encoders
-            );
-
-            // send message to get keys and process later so we don't slow the usb traffic
-            // not sure if that would be an issue as i don't know the usb protocol. mabye
-            // we could process here too??
-            let mut mappings: Vec<KeyMapping> = Vec::new();
-            if *layer > 0 {
-                // specific layer
-                let _ = keyboard.send(&messages::Messages::read_config(
-                    device_info.num_keys,
-                    device_info.num_encoders,
-                    *layer,
-                ));
-                // read keys for specified layer
-                info!("reading keys for layer {}", layer);
-                let data = messages::Messages::read_config(
-                    device_info.num_keys,
-                    device_info.num_encoders,
-                    *layer,
-                );
-                let _ = keyboard.send(&data);
-
-                // read all messages from device
-                loop {
-                    let bytes_read = keyboard.recieve(&mut buf)?;
-                    if bytes_read == 0 {
-                        break;
-                    }
-                    debug!("bytes read: {bytes_read}");
-                    debug!("data: {:02x?}", buf);
-                    mappings.push(decoder::Decoder::get_key_mapping(&buf)?);
-                }
-            } else {
-                // read keys for all layers
-                for i in 1..=consts::NUM_LAYERS {
-                    let _ = keyboard.send(&messages::Messages::read_config(
-                        device_info.num_keys,
-                        device_info.num_encoders,
-                        i,
-                    ));
-                    info!("reading keys for layer {i}");
-                    let data = messages::Messages::read_config(
-                        device_info.num_keys,
-                        device_info.num_encoders,
-                        i,
-                    );
-                    let _ = keyboard.send(&data);
-
-                    // read all messages from device
-                    loop {
-                        let bytes_read = keyboard.recieve(&mut buf)?;
-                        if bytes_read == 0 {
-                            break;
-                        }
-                        debug!("bytes read: {bytes_read}");
-                        debug!("data: {:02x?}", buf);
-                        mappings.push(decoder::Decoder::get_key_mapping(&buf)?);
-                    }
-                }
-            }
-
-            // process responses from device
-            let rows_cols = guestimate_rows_cols(device_info.num_keys)?;
-            let mut mp = Macropad::new(rows_cols.0, rows_cols.1, device_info.num_encoders);
-            let mut knob_idx = 0;
-            let mut knob_type = 0;
-            let mut last_layer = 0;
-            for km in mappings {
-                debug!("{:?}", km);
-                if km.layer != last_layer {
-                    last_layer = km.layer;
-                    knob_idx = 0;
-                    knob_type = 0;
-                }
-
-                if km.key_number <= mp.device.rows * mp.device.cols {
-                    // button mappings
-                    let row_col = get_position(&mp, km.key_number)?;
-                    debug!(
-                        "   key: {} at row: {} col: {}",
-                        km.key_number, row_col.0, row_col.1
-                    );
-                    mp.layers[(km.layer - 1) as usize].buttons[row_col.0][row_col.1] =
-                        km.keys.join(",");
-                } else {
-                    // knobs
-                    debug!("knob idx: {} knob type: {}", knob_idx, knob_type);
-                    match knob_type {
-                        0 => {
-                            mp.layers[(km.layer - 1) as usize].knobs[knob_idx].ccw =
-                                km.keys.join("-");
-                            knob_type += 1;
-                        }
-                        1 => {
-                            mp.layers[(km.layer - 1) as usize].knobs[knob_idx].press =
-                                km.keys.join("-");
-                            knob_type += 1;
-                        }
-                        2 => {
-                            mp.layers[(km.layer - 1) as usize].knobs[knob_idx].cw =
-                                km.keys.join("-");
-                            knob_type = 0;
-                            knob_idx += 1;
-                        }
-                        _ => {
-                            panic!("should not get here!")
-                        }
-                    }
-                }
-            }
-            Mapping::print(mp);
+            let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
+            let macropad_config = keyboard
+                .read_macropad_config(layer)
+                .context("reading macropad configuration")?;
+            Mapping::print(macropad_config);
         }
     }
 
     Ok(())
-}
-
-pub fn get_position(mp: &Macropad, key_num: u8) -> Result<(usize, usize)> {
-    let cols = mp.device.cols;
-    let mut col;
-    let mut row;
-
-    if key_num % cols == 0 {
-        row = key_num / cols;
-        row = row.saturating_sub(1);
-    } else {
-        row = key_num / cols;
-    }
-    if key_num > cols {
-        col = key_num % cols;
-        if col == 0 {
-            col = cols;
-        }
-        col -= 1;
-    } else {
-        col = key_num - 1;
-    }
-    Ok((row.into(), col.into()))
-}
-
-pub fn guestimate_rows_cols(num_keys: u8) -> Result<(u8, u8)> {
-    match num_keys {
-        6 => Ok((2, 3)),
-        9 => Ok((3, 3)),
-        12 => Ok((3, 4)),
-        _ => Err(anyhow!("unable to guess rows/cols for {num_keys}")),
-    }
 }
 
 pub fn find_interface_and_endpoint(
@@ -336,13 +143,6 @@ pub fn find_interface_and_endpoint(
                 intf.descriptors().format("\n")
             )
         })?;
-        ensure!(
-            intf_desc.class_code() == 0x03
-                && intf_desc.sub_class_code() == 0x00
-                && intf_desc.protocol_code() == 0x00,
-            "unexpected interface parameters: {:#?}",
-            intf_desc
-        );
 
         let descriptors = intf_desc.endpoint_descriptors();
         // per usb spec, the max value for a usb endpoint is 7 bits (or 127)
@@ -366,6 +166,9 @@ pub fn find_interface_and_endpoint(
             if out_if < 0xFF && in_if < 0xFF {
                 debug!("Found endpoint {endpoint:?}");
                 return Ok((iface_num, out_if, in_if));
+            } else if out_if < 0xFF {
+                debug!("Found OUT endpoint {endpoint:?}");
+                return Ok((iface_num, out_if, 0xFF));
             }
         }
     }
@@ -402,9 +205,9 @@ fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
         .context("claim interface")?;
 
     match id_product {
-        0x8840 | 0x8842 => k884x::Keyboard884x::new(handle, endpt_addr_out, endpt_addr_in)
+        0x8840 | 0x8842 => k884x::Keyboard884x::new(Some(handle), endpt_addr_out, endpt_addr_in)
             .map(|v| Box::new(v) as Box<dyn Keyboard>),
-        0x8880 => k8880::Keyboard8880::new(handle, endpt_addr_out, endpt_addr_in)
+        0x8890 => k8890::Keyboard8890::new(Some(handle), endpt_addr_out)
             .map(|v| Box::new(v) as Box<dyn Keyboard>),
         _ => unreachable!("This shouldn't happen!"),
     }

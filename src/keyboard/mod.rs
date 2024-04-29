@@ -1,8 +1,7 @@
 pub(crate) mod k884x;
-pub(crate) mod k8880;
+pub(crate) mod k8890;
 
-use crate::consts;
-//use crate::parse;
+use crate::{consts, mapping::Macropad};
 
 use std::fmt::Display;
 
@@ -15,23 +14,35 @@ use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 
 use itertools::Itertools as _;
 
-pub trait Keyboard {
-    fn map_key(&mut self, layer: u8, key_num: u8, key: String) -> Result<()>;
-    fn set_led(&mut self, n: u8, color: LedColor) -> Result<()>;
+pub trait Messages {
+    fn read_supported(&self) -> bool;
+    fn read_config(&self, keys: u8, encoders: u8, layer: u8) -> Vec<u8>;
+    fn device_type(&self) -> Vec<u8>;
+    fn program_led(&self, mode: u8, color: LedColor) -> Vec<u8>;
+    fn end_program(&self) -> Vec<u8>;
+}
+
+pub trait Configuration {
+    fn read_macropad_config(&mut self, layer: &u8) -> Result<Macropad>;
+}
+
+pub trait Keyboard: Messages + Configuration {
+    fn program(&mut self, macropad: &Macropad) -> Result<()>;
+    fn set_led(&mut self, mode: u8, color: LedColor) -> Result<()>;
 
     fn get_handle(&self) -> &DeviceHandle<Context>;
     fn get_out_endpoint(&self) -> u8;
     fn get_in_endpoint(&self) -> u8;
 
     fn send(&mut self, msg: &[u8]) -> Result<()> {
-        debug!("msg size: {}", msg.len());
-        debug!("msg: {:02x?}", msg);
         let written = self.get_handle().write_interrupt(
             self.get_out_endpoint(),
             msg,
             consts::DEFAULT_TIMEOUT,
         )?;
         ensure!(written == msg.len(), "not all data written");
+        debug!("msg: {:02x?}", msg);
+        debug!("--------------------------------------------------");
         Ok(())
     }
 

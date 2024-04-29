@@ -72,7 +72,6 @@ use std::fs::File;
 use std::str::FromStr;
 
 use crate::config::Orientation;
-use crate::consts;
 use crate::keyboard::{MediaCode, Modifier, WellKnownCode};
 
 pub struct Mapping {}
@@ -193,14 +192,22 @@ impl Mapping {
     }
 
     fn validate_key_mapping(key: &str) -> Result<()> {
-        // ensure we don't go over max
         let keys: Vec<_> = key.split(',').collect();
+
+        /*
+           TODO:
+           Need to figure out a way to do this as it's keyboard dependent. for now,
+           programming will fail with the right error messge so we'll skip this
+           check validating the configuration file for now...
+
+        // ensure we don't go over max
         if keys.len() > consts::MAX_KEY_PRESSES {
             return Err(anyhow!(
                 "One key can be mapped to a maximum of {} key presses",
                 consts::MAX_KEY_PRESSES
             ));
         }
+        */
 
         // check individual keys
         for k in keys {

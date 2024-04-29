@@ -17,8 +17,14 @@ pub const NUM_LAYERS: u8 = 3;
 pub const READ_BUF_SIZE: u8 = 72;
 
 /// Maximum number of key presses that can be assigned to a key
+/// for a 0x884X macropad
 ///
-pub const MAX_KEY_PRESSES: usize = 17;
+pub const MAX_KEY_PRESSES_884X: usize = 17;
+
+/// Maximum number of key presses that can be assigned to a key
+/// for a 0x8890 macropad
+///
+pub const MAX_KEY_PRESSES_8890: usize = 5;
 
 /// Maximum delay for a keypress
 ///
