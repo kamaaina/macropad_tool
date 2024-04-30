@@ -24,8 +24,8 @@ impl Configuration for Keyboard884x {
         let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
 
         // get the type of device
-        let _ = self.send(&self.device_type());
-        let _ = self.recieve(&mut buf);
+        self.send(&self.device_type())?;
+        self.recieve(&mut buf)?;
         let device_info = Decoder::get_device_info(&buf);
         info!(
             "OUT: 0x{:02x} IN: 0x{:02x}",
@@ -43,11 +43,7 @@ impl Configuration for Keyboard884x {
         let mut mappings: Vec<KeyMapping> = Vec::new();
         if *layer > 0 {
             // specific layer
-            let _ = self.send(&self.read_config(
-                device_info.num_keys,
-                device_info.num_encoders,
-                *layer,
-            ));
+            self.send(&self.read_config(device_info.num_keys, device_info.num_encoders, *layer))?;
             // read keys for specified layer
             info!("reading keys for layer {}", layer);
             let data = self.read_config(device_info.num_keys, device_info.num_encoders, *layer);
@@ -66,8 +62,7 @@ impl Configuration for Keyboard884x {
         } else {
             // read keys for all layers
             for i in 1..=consts::NUM_LAYERS {
-                let _ =
-                    self.send(&self.read_config(device_info.num_keys, device_info.num_encoders, i));
+                self.send(&self.read_config(device_info.num_keys, device_info.num_encoders, i))?;
                 info!("reading keys for layer {i}");
                 let data = self.read_config(device_info.num_keys, device_info.num_encoders, i);
                 let _ = self.send(&data);
@@ -185,8 +180,8 @@ impl Keyboard for Keyboard884x {
         let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
 
         // get the type of device
-        let _ = self.send(&self.device_type());
-        let _ = self.recieve(&mut buf);
+        self.send(&self.device_type())?;
+        self.recieve(&mut buf)?;
         let device_info = Decoder::get_device_info(&buf);
         ensure!(
                 device_info.num_keys == (macropad.device.rows * macropad.device.cols)
@@ -226,7 +221,7 @@ impl Keyboard for Keyboard884x {
                 j += 1;
             }
         }
-        let _ = self.send(&self.end_program());
+        self.send(&self.end_program())?;
         Ok(())
     }
 
