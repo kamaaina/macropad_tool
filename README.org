@@ -32,6 +32,7 @@ This is an utility for programming small keyboards like this one:
 [[images/keyboard-6-1.png]]
 [[images/keyboard-12-2.png]]
 [[images/keyboard-3-1.jpg]]
+[[images/keyboard-4-0.png]]
 
 Many of these keyboards are popular on AliExpress and Amazon, but the seller usually makes you
 download a windows exe file from a google drive account to program it. It also assumes
