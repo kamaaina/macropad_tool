@@ -81,21 +81,68 @@ impl Keyboard for Keyboard8890 {
                         keys.len().try_into()?,
                         j,
                         MsgType::KeyBeginProgram,
+                        0,
                     )?;
                     if msg[2] != 0x13 {
                         // for mouse related key presses, there is just one message
                         // per key press when programming key
                         self.send(&msg)?;
                     }
-                    for key in &keys {
+                    for (k, key) in keys.iter().enumerate() {
                         self.send(&self.build_key_msg(
                             key.to_string(),
                             keys.len().try_into()?,
                             j,
                             MsgType::KeyProgram,
+                            (k + 1).try_into()?,
                         )?)?;
                     }
                     j += 1;
+                }
+            }
+            let mut key_num = 0x0du8;
+            for knob in &layer.knobs {
+                debug!(
+                    "programming knob ccw: {} cw: {} push: {}",
+                    knob.ccw, knob.cw, knob.press
+                );
+                let mut btn;
+                for i in 0..3 {
+                    match i {
+                        0 => btn = knob.ccw.clone(),
+                        1 => btn = knob.cw.clone(),
+                        2 => btn = knob.press.clone(),
+                        _ => unreachable!("should not get here"),
+                    }
+                    let keys: Vec<_> = btn.split(',').collect();
+                    if keys.len() > consts::MAX_KEY_PRESSES_8890 {
+                        return Err(anyhow!(
+                            "maximum key presses for this macropad is {}",
+                            consts::MAX_KEY_PRESSES_8890
+                        ));
+                    }
+                    let msg = self.build_key_msg(
+                        btn.to_string(),
+                        keys.len().try_into()?,
+                        key_num,
+                        MsgType::KeyBeginProgram,
+                        0,
+                    )?;
+                    if msg[2] != 0x13 {
+                        // for mouse related key presses, there is just one message
+                        // per key press when programming key
+                        self.send(&msg)?;
+                    }
+                    for (k, key) in keys.iter().enumerate() {
+                        self.send(&self.build_key_msg(
+                            key.to_string(),
+                            keys.len().try_into()?,
+                            key_num,
+                            MsgType::KeyProgram,
+                            (k + 1).try_into()?,
+                        )?)?;
+                    }
+                    key_num += 1;
                 }
             }
         }
@@ -151,6 +198,7 @@ impl Keyboard8890 {
         num_keys_to_pgrm: u8,
         key_pos: u8,
         msg_type: MsgType,
+        key_chord_position: u8,
     ) -> Result<Vec<u8>> {
         let mut msg = vec![0x03, key_pos, 0x11, 0x00, 0x00];
 
@@ -164,7 +212,7 @@ impl Keyboard8890 {
             let mut mouse_action = 0u8;
             let mut mouse_click;
             let kc: Vec<_> = key_chord.split('-').collect();
-            msg[4] += 1;
+            msg[4] += key_chord_position;
             let mut m_c = 0x00u8;
             let mut wkk = 0x00;
             for key in kc {
@@ -203,8 +251,6 @@ impl Keyboard8890 {
                     msg[2] = 0x13;
                 }
             }
-            msg.extend_from_slice(&[0x01]);
-            remaining -= 1;
         }
         msg.extend_from_slice(&vec![0; remaining]);
 
@@ -227,19 +273,20 @@ mod tests {
             1u8,
             1u8,
             MsgType::KeyBeginProgram,
+            0,
         )?;
-        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x00, 0x01];
+        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x00, 0x00];
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(&expected, &msg[..6], "checking message");
 
-        let msg = kbd.build_key_msg("ctrl-a".to_string(), 1u8, 1u8, MsgType::KeyProgram)?;
+        let msg = kbd.build_key_msg("ctrl-a".to_string(), 1u8, 1u8, MsgType::KeyProgram, 1)?;
         let expected = vec![0x03, 0x01, 0x11, 0x01, 0x01, 0x01, 0x04];
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(&expected, &msg[..7], "checking message");
 
-        let msg = kbd.build_key_msg("ctrl-s".to_string(), 1u8, 1u8, MsgType::KeyProgram)?;
+        let msg = kbd.build_key_msg("ctrl-s".to_string(), 1u8, 1u8, MsgType::KeyProgram, 1)?;
         let expected = vec![0x03, 0x01, 0x11, 0x01, 0x01, 0x01, 0x16];
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
@@ -250,12 +297,12 @@ mod tests {
     #[test]
     fn a_key() -> anyhow::Result<()> {
         let kbd = Keyboard8890::new(None, 0)?;
-        let msg = kbd.build_key_msg("a".to_string(), 1u8, 1u8, MsgType::KeyBeginProgram)?;
-        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x00, 0x01];
+        let msg = kbd.build_key_msg("a".to_string(), 1u8, 1u8, MsgType::KeyBeginProgram, 1)?;
+        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x00, 0x00];
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(&expected, &msg[..6], "checking message");
-        let msg = kbd.build_key_msg("a".to_string(), 1u8, 1u8, MsgType::KeyProgram)?;
+        let msg = kbd.build_key_msg("a".to_string(), 1u8, 1u8, MsgType::KeyProgram, 1)?;
 
         let expected = vec![0x03, 0x01, 0x11, 0x01, 0x01, 0x00, 0x04];
         println!("{:02x?}", msg);
