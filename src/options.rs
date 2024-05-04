@@ -22,19 +22,19 @@ pub struct DevelOptions {
     #[arg(long, default_value_t=VENDOR_ID, value_parser=u16_hex_or_decimal, hide=true)]
     pub vendor_id: u16,
 
-    #[arg(long, value_parser=u16_hex_or_decimal, default_value_t=0x8840, hide=true)]
-    pub product_id: u16,
+    #[arg(long, value_parser=u16_hex_or_decimal, hide=true)]
+    pub product_id: Option<u16>,
 
     #[arg(long, value_parser=parse_address, hide=true)]
     pub address: Option<(u8, u8)>,
 
     /// OUT endpoint address where data is written
-    #[arg(long, value_parser=u8_hex_or_decimal, default_value_t = 0x4, hide = true)]
-    pub out_endpoint_address: u8,
+    #[arg(long, value_parser=u8_hex_or_decimal, hide = true)]
+    pub out_endpoint_address: Option<u8>,
 
     /// IN endpoint address where data is read
-    #[arg(long, value_parser=u8_hex_or_decimal, default_value_t = 0x84, hide = true)]
-    pub in_endpoint_address: u8,
+    #[arg(long, value_parser=u8_hex_or_decimal, hide = true)]
+    pub in_endpoint_address: Option<u8>,
 
     #[arg(long, hide = true)]
     pub interface_number: Option<u8>,
@@ -50,7 +50,7 @@ pub fn u16_hex_or_decimal(s: &str) -> Result<u16, ParseIntError> {
 
 pub fn u8_hex_or_decimal(s: &str) -> Result<u8, ParseIntError> {
     if s.to_ascii_lowercase().starts_with("0x") {
-        u8::from_str_radix(&s[2..], 8)
+        u8::from_str_radix(&s[2..], 16)
     } else {
         s.parse::<u8>()
     }

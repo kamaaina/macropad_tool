@@ -31,6 +31,7 @@ use strum::IntoEnumIterator as _;
 fn main() -> Result<()> {
     env_logger::init();
     let options = Options::parse();
+    debug!("options: {:?}", options.devel_options);
 
     match &options.command {
         Command::ShowKeys => {
@@ -108,9 +109,10 @@ fn main() -> Result<()> {
 pub fn find_interface_and_endpoint(
     device: &Device<Context>,
     interface_num: Option<u8>,
-    endpoint_addr_out: u8,
-    endpoint_addr_in: u8,
+    endpoint_addr_out: Option<u8>,
+    endpoint_addr_in: Option<u8>,
 ) -> Result<(u8, u8, u8)> {
+    debug!("out: {endpoint_addr_out:?} in: {endpoint_addr_in:?}");
     let conf_desc = device
         .config_descriptor(0)
         .context("get config #0 descriptor")?;
@@ -121,6 +123,10 @@ pub fn find_interface_and_endpoint(
         None => conf_desc.interfaces().map(|iface| iface.number()).collect(),
     };
 
+    // per usb spec, the max value for a usb endpoint is 7 bits (or 127)
+    // so set the values to be invalid by default
+    let mut out_if = 0xFF;
+    let mut in_if = 0xFF;
     for iface_num in interface_nums {
         debug!("Probing interface {iface_num}");
 
@@ -145,31 +151,45 @@ pub fn find_interface_and_endpoint(
         })?;
 
         let descriptors = intf_desc.endpoint_descriptors();
-        // per usb spec, the max value for a usb endpoint is 7 bits (or 127)
-        // so set the values to be invalid by default
-        let mut out_if = 0xFF;
-        let mut in_if = 0xFF;
         for endpoint in descriptors {
+            // check packet size
+            if endpoint.max_packet_size() != (consts::PACKET_SIZE - 1).try_into()? {
+                continue;
+            }
+
             debug!("==> {:?} direction: {:?}", endpoint, endpoint.direction());
             if endpoint.transfer_type() == TransferType::Interrupt
                 && endpoint.direction() == Direction::Out
-                && endpoint.address() == endpoint_addr_out
             {
-                out_if = endpoint.address();
+                if let Some(ea) = endpoint_addr_out {
+                    if endpoint.address() == ea {
+                        debug!("Found OUT endpoint {endpoint:?}");
+                        out_if = endpoint.address();
+                    }
+                } else {
+                    debug!("Found OUT endpoint {endpoint:?}");
+                    out_if = endpoint.address();
+                }
             }
             if endpoint.transfer_type() == TransferType::Interrupt
                 && endpoint.direction() == Direction::In
-                && endpoint.address() == endpoint_addr_in
             {
-                in_if = endpoint.address();
+                if let Some(ea) = endpoint_addr_in {
+                    if endpoint.address() == ea {
+                        debug!("Found IN endpoint {endpoint:?}");
+                        in_if = endpoint.address();
+                    }
+                } else {
+                    debug!("Found IN endpoint {endpoint:?}");
+                    in_if = endpoint.address();
+                }
             }
-            if out_if < 0xFF && in_if < 0xFF {
-                debug!("Found endpoint {endpoint:?}");
-                return Ok((iface_num, out_if, in_if));
-            } else if out_if < 0xFF {
-                debug!("Found OUT endpoint {endpoint:?}");
-                return Ok((iface_num, out_if, 0xFF));
-            }
+        }
+        debug!("ep OUT addr: 0x{out_if:02x} ep IN addr: 0x{in_if:02x}");
+        if out_if < 0xFF && in_if < 0xFF {
+            return Ok((iface_num, out_if, in_if));
+        } else if out_if < 0xFF {
+            return Ok((iface_num, out_if, 0xFF));
         }
     }
 
@@ -213,7 +233,13 @@ fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
     }
 }
 
-pub fn find_device(vid: u16, pid: u16) -> Result<(Device<Context>, DeviceDescriptor, u16)> {
+pub fn find_device(vid: u16, pid: Option<u16>) -> Result<(Device<Context>, DeviceDescriptor, u16)> {
+    debug!("vid: 0x{vid:02x}");
+    if let Some(prod_id) = pid {
+        debug!("pid: 0x{prod_id:02x}");
+    } else {
+        debug!("pid: None");
+    }
     let options = vec![
         #[cfg(windows)]
         rusb::UsbOption::use_usbdk(),
@@ -232,8 +258,14 @@ pub fn find_device(vid: u16, pid: u16) -> Result<(Device<Context>, DeviceDescrip
         );
         let product_id = desc.product_id();
 
-        if desc.vendor_id() == vid && PRODUCT_IDS.contains(&pid) {
-            found.push((device, desc, product_id));
+        if desc.vendor_id() == vid {
+            if let Some(prod_id) = pid {
+                if PRODUCT_IDS.contains(&prod_id) {
+                    found.push((device, desc, product_id));
+                }
+            } else {
+                found.push((device, desc, product_id));
+            }
         }
     }
 
