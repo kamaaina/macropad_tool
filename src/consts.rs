@@ -30,3 +30,7 @@ pub const MAX_KEY_PRESSES_8890: usize = 5;
 ///
 #[allow(unused)]
 pub const MAX_DELAY: u16 = 6000;
+
+/// Packet size
+///
+pub const PACKET_SIZE: usize = 65;

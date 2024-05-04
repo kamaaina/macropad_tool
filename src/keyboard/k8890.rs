@@ -12,12 +12,6 @@ use num::ToPrimitive;
 use rusb::{Context, DeviceHandle};
 use std::str::FromStr;
 
-#[derive(PartialEq)]
-enum MsgType {
-    KeyBeginProgram,
-    KeyProgram,
-}
-
 pub struct Keyboard8890 {
     handle: Option<DeviceHandle<Context>>,
     out_endpoint: u8,
@@ -45,14 +39,16 @@ impl Messages for Keyboard8890 {
 
     fn program_led(&self, mode: u8, _color: LedColor) -> Vec<u8> {
         let mut msg = vec![0x03, 0xb0, 0x18, mode];
-        msg.extend_from_slice(&[0; 61]);
+        let size = consts::PACKET_SIZE - msg.len();
+        msg.extend_from_slice(&vec![0; size]);
         msg
     }
 
     fn end_program(&self) -> Vec<u8> {
         let last_byte = if self.led_programmed { 0xa1 } else { 0xaa };
         let mut msg = vec![0x03, 0xaa, last_byte];
-        msg.extend_from_slice(&[0; 62]);
+        let size = consts::PACKET_SIZE - msg.len();
+        msg.extend_from_slice(&vec![0; size]);
         msg
     }
 }
@@ -61,14 +57,11 @@ impl Keyboard for Keyboard8890 {
     fn program(&mut self, macropad: &Macropad) -> Result<()> {
         debug!("programming keyboard");
         self.send(&self.begin_programming())?;
-        // my device only has 1 layer. one row with 4 keys, but i have to believe that this same chip
-        // powers different configurations so lets try to program the macropad according to the
-        // configuration file rather than hardcoding it to only 4 keys
         for (i, layer) in macropad.layers.iter().enumerate() {
-            let mut j = 1;
+            let mut key_num = 1;
             for row in &layer.buttons {
                 for btn in row {
-                    debug!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, j);
+                    debug!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, key_num);
                     let keys: Vec<_> = btn.split(',').collect();
                     if keys.len() > consts::MAX_KEY_PRESSES_8890 {
                         return Err(anyhow!(
@@ -76,26 +69,37 @@ impl Keyboard for Keyboard8890 {
                             consts::MAX_KEY_PRESSES_8890
                         ));
                     }
-                    let msg = self.build_key_msg(
-                        btn.to_string(),
-                        keys.len().try_into()?,
-                        j,
-                        MsgType::KeyBeginProgram,
-                    )?;
-                    if msg[2] != 0x13 {
-                        // for mouse related key presses, there is just one message
-                        // per key press when programming key
+                    for msg in self.map_key(btn.to_string(), key_num)? {
                         self.send(&msg)?;
                     }
-                    for key in &keys {
-                        self.send(&self.build_key_msg(
-                            key.to_string(),
-                            keys.len().try_into()?,
-                            j,
-                            MsgType::KeyProgram,
-                        )?)?;
+                    key_num += 1;
+                }
+            }
+            key_num = 0x0du8;
+            for knob in &layer.knobs {
+                debug!(
+                    "programming knob ccw: {} cw: {} push: {}",
+                    knob.ccw, knob.cw, knob.press
+                );
+                let mut btn;
+                for i in 0..3 {
+                    match i {
+                        0 => btn = knob.ccw.clone(),
+                        1 => btn = knob.press.clone(),
+                        2 => btn = knob.cw.clone(),
+                        _ => unreachable!("should not get here"),
                     }
-                    j += 1;
+                    let keys: Vec<_> = btn.split(',').collect();
+                    if keys.len() > consts::MAX_KEY_PRESSES_8890 {
+                        return Err(anyhow!(
+                            "maximum key presses for this macropad is {}",
+                            consts::MAX_KEY_PRESSES_8890
+                        ));
+                    }
+                    for msg in self.map_key(btn.to_string(), key_num)? {
+                        self.send(&msg)?;
+                    }
+                    key_num += 1;
                 }
             }
         }
@@ -141,41 +145,45 @@ impl Keyboard8890 {
 
     pub fn begin_programming(&self) -> Vec<u8> {
         let mut msg = vec![0x03, 0xa1, 0x01];
-        msg.extend_from_slice(&[0; 62]);
+        let size = consts::PACKET_SIZE - msg.len();
+        msg.extend_from_slice(&vec![0; size]);
         msg
     }
 
-    fn build_key_msg(
-        &self,
-        key_chord: String,
-        num_keys_to_pgrm: u8,
-        key_pos: u8,
-        msg_type: MsgType,
-    ) -> Result<Vec<u8>> {
-        let mut msg = vec![0x03, key_pos, 0x11, 0x00, 0x00];
-
-        // it seems this devices needs at least 2 messages to program one key so need
-        // to differentiate if we are building first or second message
-        let kc: Vec<_> = key_chord.split('-').collect();
-        let mut remaining = 60;
-        msg[3] = num_keys_to_pgrm;
-        if msg_type == MsgType::KeyProgram {
-            debug!("=== KeyProgram ===");
+    fn map_key(&self, key_chord: String, key_pos: u8) -> Result<Vec<Vec<u8>>> {
+        let mut retval = Vec::new();
+        let mut prepend = Vec::new();
+        let kc: Vec<_> = key_chord.split(',').collect();
+        let mut prepended = false;
+        for (i, key) in kc.iter().enumerate() {
+            let mut msg = vec![0x03, key_pos, 0x00, 0x00];
+            let mut remaining = consts::PACKET_SIZE - msg.len();
+            let km: Vec<_> = key.split('-').collect();
             let mut mouse_action = 0u8;
-            let mut mouse_click;
-            let kc: Vec<_> = key_chord.split('-').collect();
-            msg[4] += 1;
-            let mut m_c = 0x00u8;
-            let mut wkk = 0x00;
-            for key in kc {
-                debug!("=> {key}");
-                if let Ok(m) = Modifier::from_str(key) {
-                    let power = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
-                    m_c = 2u32.pow(power as u32) as u8;
-                } else if let Ok(w) = WellKnownCode::from_str(key) {
+            let mouse_click;
+            let m_c;
+            let wkk;
+            for _mod_key in km {
+                //if let Some(_mod_key) = km.into_iter().next() {
+                debug!("=====> {key}");
+                if let Ok(w) = WellKnownCode::from_str(key) {
+                    msg[2] = 0x11;
+                    msg[3] = kc.len().try_into()?;
+                    msg.extend_from_slice(&[0; 3]);
+                    remaining -= 3;
+                    let mut first_msg = msg.clone();
+                    first_msg.extend_from_slice(&vec![0; remaining]);
+                    msg[4] = (i + 1).try_into()?;
+                    if !prepended {
+                        prepend.push(first_msg);
+                        prepended = true;
+                    }
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
+                    msg[6] = wkk;
                 } else if let Ok(a) = MediaCode::from_str(key) {
                     m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
+                    msg[2] = 0x12;
+                    msg[3] = m_c;
                 } else if let Ok(a) = MouseButton::from_str(key) {
                     mouse_click =
                         2u32.pow(<MouseButton as ToPrimitive>::to_u8(&a).unwrap().into()) as u8;
@@ -189,78 +197,134 @@ impl Keyboard8890 {
                     }
                     msg[2] = 0x13;
                     msg[6] = mouse_action;
+                } else {
+                    // modifier combo (eg. shift-m)
+                    let mapping = Keyboard8890::key_mapping(key)?;
+                    msg[2] = 0x11;
+                    msg[3] = kc.len().try_into()?;
+                    msg.extend_from_slice(&[0; 3]);
+                    remaining -= 3;
+                    let mut first_msg = msg.clone();
+                    first_msg.extend_from_slice(&vec![0; remaining]);
+                    msg[4] = (i + 1).try_into()?;
+                    if !prepended {
+                        prepend.push(first_msg);
+                        prepended = true;
+                    }
+                    msg[5] = mapping.0;
+                    msg[6] = mapping.1;
                 }
+                break;
             }
-            msg.extend_from_slice(&[m_c, wkk]);
-            remaining -= 2;
-        } else {
-            debug!("=== KeyBeginProgram ===");
-            for key in kc {
-                debug!("=> {key}");
-                if let Ok(_a) = MouseButton::from_str(key) {
-                    msg[2] = 0x13;
-                } else if let Ok(_a) = MouseAction::from_str(key) {
-                    msg[2] = 0x13;
-                }
+            msg.extend_from_slice(&vec![0; remaining]);
+            for i in &prepend {
+                retval.push(i.clone());
             }
-            msg.extend_from_slice(&[0x01]);
-            remaining -= 1;
+            prepend.clear();
+            retval.push(msg);
         }
-        msg.extend_from_slice(&vec![0; remaining]);
 
-        Ok(msg)
+        Ok(retval)
+    }
+
+    fn key_mapping(key: &str) -> Result<(u8, u8)> {
+        let mut mc = 0;
+        let mut wkk = 0;
+        let values: Vec<_> = key.split('-').collect();
+        for i in values {
+            if let Ok(w) = WellKnownCode::from_str(i) {
+                wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
+            }
+            if let Ok(m) = Modifier::from_str(i) {
+                let power = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
+                mc = 2u32.pow(power as u32) as u8;
+            }
+        }
+        Ok((mc, wkk))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::keyboard::{
-        k8890::{Keyboard8890, MsgType},
-        LedColor, Messages,
+    use crate::{
+        consts,
+        keyboard::{k8890::Keyboard8890, LedColor, Messages},
     };
+
+    #[test]
+    fn test_hello() -> anyhow::Result<()> {
+        let kbd = Keyboard8890::new(None, 0)?;
+        let msgs = kbd.map_key("h,e,l,l,o".to_string(), 4)?;
+        println!("{:02x?}", msgs);
+        assert_eq!(msgs.len(), 6, "number of messages created");
+        for i in 0..6 {
+            assert_eq!(msgs[i].len(), consts::PACKET_SIZE, "checking msg size");
+        }
+
+        let expected = vec![0x03, 0x04, 0x11, 0x05, 0x00, 0x00];
+        assert_eq!(msgs[0].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[0][..6], "checking message");
+
+        let expected = vec![0x03, 0x04, 0x11, 0x05, 0x01, 0x00, 0x0b];
+        assert_eq!(msgs[1].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[1][..7], "checking message");
+
+        let expected = vec![0x03, 0x04, 0x11, 0x05, 0x02, 0x00, 0x08];
+        assert_eq!(msgs[1].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[2][..7], "checking message");
+
+        let expected = vec![0x03, 0x04, 0x11, 0x05, 0x03, 0x00, 0x0f];
+        assert_eq!(msgs[1].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[3][..7], "checking message");
+
+        let expected = vec![0x03, 0x04, 0x11, 0x05, 0x04, 0x00, 0x0f];
+        assert_eq!(msgs[1].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[4][..7], "checking message");
+
+        let expected = vec![0x03, 0x04, 0x11, 0x05, 0x05, 0x00, 0x12];
+        assert_eq!(msgs[1].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[5][..7], "checking message");
+
+        Ok(())
+    }
 
     #[test]
     fn ctrl_a_ctrl_s() -> anyhow::Result<()> {
         let kbd = Keyboard8890::new(None, 0)?;
-        let msg = kbd.build_key_msg(
-            "ctrl-a,ctrl-s".to_string(),
-            1u8,
-            1u8,
-            MsgType::KeyBeginProgram,
-        )?;
-        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x00, 0x01];
-        println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
-        assert_eq!(&expected, &msg[..6], "checking message");
+        let msgs = kbd.map_key("ctrl-a,ctrl-s".to_string(), 3)?;
+        println!("{:02x?}", msgs);
+        for i in 0..3 {
+            assert_eq!(msgs[i].len(), consts::PACKET_SIZE, "checking msg size");
+        }
+        assert_eq!(msgs.len(), 3, "number of messages created");
 
-        let msg = kbd.build_key_msg("ctrl-a".to_string(), 1u8, 1u8, MsgType::KeyProgram)?;
-        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x01, 0x01, 0x04];
-        println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
-        assert_eq!(&expected, &msg[..7], "checking message");
+        let expected = vec![0x03, 0x03, 0x11, 0x02, 0x00, 0x00];
+        assert_eq!(msgs[0].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[0][..6], "checking message");
 
-        let msg = kbd.build_key_msg("ctrl-s".to_string(), 1u8, 1u8, MsgType::KeyProgram)?;
-        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x01, 0x01, 0x16];
-        println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
-        assert_eq!(&expected, &msg[..7], "checking message");
+        let expected = vec![0x03, 0x03, 0x11, 0x02, 0x01, 0x01, 0x04];
+        assert_eq!(msgs[1].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[1][..7], "checking message");
+
+        let expected = vec![0x03, 0x03, 0x11, 0x02, 0x02, 0x01, 0x16];
+        assert_eq!(msgs[2].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[2][..7], "checking message");
         Ok(())
     }
 
     #[test]
     fn a_key() -> anyhow::Result<()> {
         let kbd = Keyboard8890::new(None, 0)?;
-        let msg = kbd.build_key_msg("a".to_string(), 1u8, 1u8, MsgType::KeyBeginProgram)?;
-        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x00, 0x01];
-        println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
-        assert_eq!(&expected, &msg[..6], "checking message");
-        let msg = kbd.build_key_msg("a".to_string(), 1u8, 1u8, MsgType::KeyProgram)?;
+        let msgs = kbd.map_key("a".to_string(), 1)?;
+        println!("{:02x?}", msgs);
+        assert_eq!(msgs.len(), 2, "number of messages created");
+        let expected = vec![0x03, 0x01, 0x11, 0x01, 0x00, 0x00];
+        assert_eq!(msgs[0].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[0][..6], "checking message");
 
         let expected = vec![0x03, 0x01, 0x11, 0x01, 0x01, 0x00, 0x04];
-        println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
-        assert_eq!(&expected, &msg[..7], "checking message");
+        assert_eq!(msgs[1].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[1][..7], "checking message");
         Ok(())
     }
 
@@ -270,12 +334,12 @@ mod tests {
         kbd.led_programmed = true;
         let msg = kbd.program_led(2, LedColor::Red);
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[1], 0xb0, "checking first byte of led programming");
         assert_eq!(msg[2], 0x18, "checking second byte of led programming");
         assert_eq!(msg[3], 0x02, "checking led mode");
         let msg = kbd.end_program();
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[0], 0x03, "checking first byte of end programming led");
         assert_eq!(msg[1], 0xaa, "checking second byte of end programming led");
         assert_eq!(msg[2], 0xa1, "checking third byte of end programming led");
@@ -287,7 +351,7 @@ mod tests {
         let kbd = Keyboard8890::new(None, 0)?;
         let msg = kbd.end_program();
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[0], 0x03, "checking first byte of end programming");
         assert_eq!(msg[1], 0xaa, "checking second byte of end programming");
         assert_eq!(msg[2], 0xaa, "checking third byte of end programming");
