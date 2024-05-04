@@ -201,7 +201,7 @@ impl Keyboard8890 {
                     // modifier combo (eg. shift-m)
                     let mapping = Keyboard8890::key_mapping(key)?;
                     msg[2] = 0x11;
-                    msg[3] = 0x01;
+                    msg[3] = kc.len().try_into()?;
                     msg.extend_from_slice(&[0; 3]);
                     remaining -= 3;
                     let mut first_msg = msg.clone();
@@ -292,20 +292,23 @@ mod tests {
     fn ctrl_a_ctrl_s() -> anyhow::Result<()> {
         let kbd = Keyboard8890::new(None, 0)?;
         let msgs = kbd.map_key("ctrl-a,ctrl-s".to_string(), 3)?;
+        println!("{:02x?}", msgs);
+        for i in 0..3 {
+            assert_eq!(msgs[i].len(), consts::PACKET_SIZE, "checking msg size");
+        }
         assert_eq!(msgs.len(), 3, "number of messages created");
 
-        let expected = vec![0x03, 0x03, 0x11, 0x01, 0x00, 0x00];
-        println!("{:02x?}", msgs);
+        let expected = vec![0x03, 0x03, 0x11, 0x02, 0x00, 0x00];
         assert_eq!(msgs[0].len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(&expected, &msgs[0][..6], "checking message");
 
-        let expected = vec![0x03, 0x03, 0x11, 0x01, 0x01, 0x01, 0x04];
+        let expected = vec![0x03, 0x03, 0x11, 0x02, 0x01, 0x01, 0x04];
         assert_eq!(msgs[1].len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(&expected, &msgs[1][..7], "checking message");
 
-        //let expected = vec![0x03, 0x03, 0x11, 0x01, 0x01, 0x01, 0x16];
-        //assert_eq!(msgs[2].len(), consts::PACKET_SIZE, "checking msg size");
-        //assert_eq!(&expected, &msgs[2][..7], "checking message");
+        let expected = vec![0x03, 0x03, 0x11, 0x02, 0x02, 0x01, 0x16];
+        assert_eq!(msgs[2].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[2][..7], "checking message");
         Ok(())
     }
 
