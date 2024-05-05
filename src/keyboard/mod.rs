@@ -15,7 +15,6 @@ use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 use itertools::Itertools as _;
 
 pub trait Messages {
-    fn read_supported(&self) -> bool;
     fn read_config(&self, keys: u8, encoders: u8, layer: u8) -> Vec<u8>;
     fn device_type(&self) -> Vec<u8>;
     fn program_led(&self, mode: u8, color: LedColor) -> Vec<u8>;

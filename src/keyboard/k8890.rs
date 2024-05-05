@@ -25,10 +25,6 @@ impl Configuration for Keyboard8890 {
 }
 
 impl Messages for Keyboard8890 {
-    fn read_supported(&self) -> bool {
-        false
-    }
-
     fn read_config(&self, _keys: u8, _encoders: u8, _layer: u8) -> Vec<u8> {
         unimplemented!("reading configuration from this macropad is not supported");
     }
@@ -160,13 +156,12 @@ impl Keyboard8890 {
             let mut remaining = consts::PACKET_SIZE - msg.len();
             let km: Vec<_> = key.split('-').collect();
             let mut mouse_action = 0u8;
-            let mouse_click;
-            let m_c;
-            let wkk;
-            for _mod_key in km {
-                //if let Some(_mod_key) = km.into_iter().next() {
-                debug!("=====> {key}");
-                if let Ok(w) = WellKnownCode::from_str(key) {
+            let mut mouse_click;
+            let mut m_c;
+            let mut wkk;
+            for mod_key in km {
+                debug!("=====> {mod_key}");
+                if let Ok(w) = WellKnownCode::from_str(mod_key) {
                     msg[2] = 0x11;
                     msg[3] = kc.len().try_into()?;
                     msg.extend_from_slice(&[0; 3]);
@@ -180,16 +175,16 @@ impl Keyboard8890 {
                     }
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
                     msg[6] = wkk;
-                } else if let Ok(a) = MediaCode::from_str(key) {
+                } else if let Ok(a) = MediaCode::from_str(mod_key) {
                     m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
                     msg[2] = 0x12;
                     msg[3] = m_c;
-                } else if let Ok(a) = MouseButton::from_str(key) {
+                } else if let Ok(a) = MouseButton::from_str(mod_key) {
                     mouse_click =
                         2u32.pow(<MouseButton as ToPrimitive>::to_u8(&a).unwrap().into()) as u8;
                     msg[2] = 0x13;
                     msg[3] = mouse_click;
-                } else if let Ok(a) = MouseAction::from_str(key) {
+                } else if let Ok(a) = MouseAction::from_str(mod_key) {
                     match a {
                         MouseAction::WheelUp => mouse_action = 0x01,
                         MouseAction::WheelDown => mouse_action = 0xff,
@@ -199,7 +194,7 @@ impl Keyboard8890 {
                     msg[6] = mouse_action;
                 } else {
                     // modifier combo (eg. shift-m)
-                    let mapping = Keyboard8890::key_mapping(key)?;
+                    let mapping = Keyboard8890::key_mapping(mod_key)?;
                     msg[2] = 0x11;
                     msg[3] = kc.len().try_into()?;
                     msg.extend_from_slice(&[0; 3]);
@@ -214,7 +209,6 @@ impl Keyboard8890 {
                     msg[5] = mapping.0;
                     msg[6] = mapping.1;
                 }
-                break;
             }
             msg.extend_from_slice(&vec![0; remaining]);
             for i in &prepend {
@@ -250,6 +244,13 @@ mod tests {
         consts,
         keyboard::{k8890::Keyboard8890, LedColor, Messages},
     };
+
+    #[test]
+    fn mike() -> anyhow::Result<()> {
+        a_key()?;
+        a_key()?;
+        Ok(())
+    }
 
     #[test]
     fn test_hello() -> anyhow::Result<()> {

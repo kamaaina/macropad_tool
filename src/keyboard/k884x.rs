@@ -132,10 +132,6 @@ impl Configuration for Keyboard884x {
 }
 
 impl Messages for Keyboard884x {
-    fn read_supported(&self) -> bool {
-        true
-    }
-
     fn read_config(&self, keys: u8, encoders: u8, layer: u8) -> Vec<u8> {
         vec![
             0x03, 0xfa, keys, encoders, layer, 0x02, 0xe0, 0xcb, 0x80, 0x00, 0xa0, 0xcc, 0x80,
