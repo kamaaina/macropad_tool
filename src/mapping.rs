@@ -316,7 +316,7 @@ impl Mapping {
 #[cfg(test)]
 mod tests {
 
-    use crate::mapping::Mapping;
+    use crate::{consts, mapping::Mapping};
 
     #[test]
     fn mapping_read() {
@@ -331,6 +331,53 @@ mod tests {
     #[test]
     fn mapping_validate() -> anyhow::Result<()> {
         Mapping::validate("./mapping.ron", None)?;
+        Ok(())
+    }
+
+    #[test]
+    fn mapping_mismatch() {
+        assert!(Mapping::validate("./mapping.ron", Some(0x8890)).is_err());
+    }
+
+    #[test]
+    fn mapping_multiple_modifiers_8890() {
+        assert!(
+            Mapping::validate_key_mapping("ctrl-a,shift-s", consts::MAX_KEY_PRESSES_8890).is_err()
+        );
+        assert!(
+            Mapping::validate_key_mapping("alt-a,ctrl-s", consts::MAX_KEY_PRESSES_8890).is_err()
+        );
+        assert!(
+            Mapping::validate_key_mapping("shift-a,alt-s", consts::MAX_KEY_PRESSES_8890).is_err()
+        );
+    }
+
+    #[test]
+    fn mapping_max_size_8890() -> anyhow::Result<()> {
+        Mapping::validate_key_mapping("1,2,3,4,5", consts::MAX_KEY_PRESSES_8890)?;
+        assert!(
+            Mapping::validate_key_mapping("1,2,3,4,5,6", consts::MAX_KEY_PRESSES_8890).is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn mapping_multiple_modifiers_8840() -> anyhow::Result<()> {
+        Mapping::validate_key_mapping("ctrl-a,shift-s", consts::MAX_KEY_PRESSES_884X)?;
+        Ok(())
+    }
+
+    #[test]
+    fn mapping_max_size_8840() -> anyhow::Result<()> {
+        Mapping::validate_key_mapping(
+            "1,2,3,4,5,6,7,8,9,0,a,b,c,d,e,f,g",
+            consts::MAX_KEY_PRESSES_884X,
+        )?;
+        assert!(Mapping::validate_key_mapping(
+            "1,2,3,4,5,6,7,8,9,0,a,b,c,d,e,f,g,h",
+            consts::MAX_KEY_PRESSES_884X
+        )
+        .is_err());
         Ok(())
     }
 }
