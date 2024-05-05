@@ -226,8 +226,13 @@ impl Mapping {
         }
 
         // check individual keys
-        for k in keys {
+        for (i, k) in keys.iter().enumerate() {
             let single_key: Vec<_> = k.split('-').collect();
+            if max_size == consts::MAX_KEY_PRESSES_8890 && i > 0 && single_key.len() > 1 {
+                return Err(anyhow!(
+                    "0x8890 macropad only supports modifier keys on first key in sequence"
+                ));
+            }
             for sk in single_key {
                 let da_key = Self::uppercase_first(sk);
                 // could be media, control, or regular key
