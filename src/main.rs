@@ -7,6 +7,7 @@ mod options;
 mod parse;
 
 use crate::consts::PRODUCT_IDS;
+use crate::decoder::Decoder;
 use crate::keyboard::{
     k884x, k8890, Keyboard, MediaCode, Modifier, MouseAction, MouseButton, WellKnownCode,
 };
@@ -64,15 +65,65 @@ fn main() -> Result<()> {
             }
         }
 
-        Command::Validate { config_file } => {
-            // load and validate mapping
-            Mapping::validate(config_file).context("validating configuration file")?;
-            println!("config is valid 👌")
+        Command::Validate {
+            config_file,
+            product_id,
+            device_connected,
+        } => {
+            if *device_connected {
+                debug!("validating with connected device");
+                if let Ok(device) = find_device(consts::VENDOR_ID, None) {
+                    // read the config for buttons/knobs and validate against file
+                    if device.2 != 0x8890 {
+                        // 0x8890 does not support reading configuration
+                        let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
+                        let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
+
+                        // get the type of device
+                        keyboard.send(&keyboard.device_type())?;
+                        keyboard.recieve(&mut buf)?;
+                        let device_info = Decoder::get_device_info(&buf);
+                        debug!(
+                            "keys: {} encoders: {}",
+                            device_info.num_keys, device_info.num_encoders
+                        );
+
+                        let macropad = Mapping::read(config_file);
+                        if device_info.num_keys != macropad.device.rows * macropad.device.cols {
+                            return Err(anyhow!(
+                                "Number of keys specified in config does not match device"
+                            ));
+                        }
+                        if device_info.num_encoders != macropad.device.knobs {
+                            return Err(anyhow!(
+                                "Number of knobs specified in config does not match device"
+                            ));
+                        }
+                    }
+                    Mapping::validate(config_file, Some(device.2))
+                        .context("validating configuration file with connected device")?;
+                    println!("config is valid 👌")
+                } else {
+                    return Err(anyhow!(
+                        "Unable to find connected device with vendor id: 0x{:02x}",
+                        consts::VENDOR_ID
+                    ));
+                }
+            } else if let Some(pid) = product_id {
+                debug!("validating with supplied product id 0x{:02x}", pid);
+                Mapping::validate(config_file, Some(*pid))
+                    .context("validating configuration file against specified product id")?;
+                println!("config is valid 👌")
+            } else {
+                // load and validate mapping
+                debug!("validating general ron formatting - unable to do more granular checking");
+                Mapping::validate(config_file, None)
+                    .context("generic validation of configuration file")?;
+                println!("config is valid 👌")
+            }
         }
 
         Command::Program { config_file } => {
-            // load and validate mapping
-            Mapping::validate(config_file)?;
             let config = Mapping::read(config_file);
             let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
             keyboard.program(&config).context("programming macropad")?;

@@ -70,6 +70,14 @@ pub enum Command {
         /// Configuration file in ron format
         #[clap(short, long, default_value = "./mapping.ron")]
         config_file: String,
+
+        /// Product ID to validate mappings against (each product differs)
+        #[clap(short, value_parser=u16_hex_or_decimal)]
+        product_id: Option<u16>,
+
+        /// Validate against connected device
+        #[clap(short, default_value_t = false)]
+        device_connected: bool,
     },
 
     /// Program key mappings
