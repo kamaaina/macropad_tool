@@ -269,7 +269,7 @@ fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
     )?;
 
     // Open device.
-    let mut handle = device.open().context("open USB device")?;
+    let handle = device.open().context("open USB device")?;
     let _ = handle.set_auto_detach_kernel_driver(true);
     handle
         .claim_interface(intf_num)
