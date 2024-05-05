@@ -8,9 +8,6 @@
   - [[#orientation][Orientation]]
   - [[#macropad-setup][Macropad Setup]]
   - [[#layers][Layers]]
-  - [[#orientation-1][Orientation]]
-  - [[#macropad-setup-1][Macropad Setup]]
-  - [[#layers-1][Layers]]
 - [[#usage][Usage]]
   - [[#udev-rules-for-linux][udev rules for linux]]
   - [[#supported-keys][Supported keys]]
@@ -48,6 +45,7 @@ cargo build --release
 #+end_example
 
 * Configuration Mappings
+The README.md file is written in emacs org mode. To get a sample configuration file, just tangle this file (C-c C-v t) from within emacs
 
 ** Orientation
 
@@ -55,126 +53,9 @@ Normal macropad orienation is when buttons are on the left
 side and rotary encoders are on the right. However, you may want to use
 the macropad in another orienation. To avoid remapping button
 positions in your head, just set it here.
-Possible values are:
-  (horizontal)
-  - 'normal': buttons on the left, rotary encoders on the right
-  - 'upsidedown': buttons on the right, rotary encoders on the left
-  (vertical)
-  - 'clockwise': buttons on the top, rotary encoders on the bottom
-  - 'counterclockwise': buttons on the bottom, rotary encoders on the top
 
-#+begin_src ron
-(
-    device: (
-        orientation: "normal",
-#+end_src
+~NOTE:~ only normal is currently supported. Other orientations will be implemented at a future date
 
-** Macropad Setup
-
-There are different models of macropad with different numbers
-of buttons and rotary encoders. Set it here for proper handling.
-Count rows and columns with the macropad in normal orienation,
-with rotary encoders on the right side.
-
-#+begin_src ron
-        rows: 3,
-        cols: 4,
-        knobs: 2,
-    ),
-#+end_src
-
-** Layers
-
-The current layer is changed using a button on the side of the macropad
-and displayed with LEDs on top (only for the moment of changing).
-All macropads I saw had three layers
-
-#+begin_src ron
-    layers: [
-        (
-#+end_src
-
-*** Buttons
-Array of buttons. In horizontal orienations it's `rows` rows
-`columns` buttons each. In vertical: `columns` rows
-`rows` buttons
-
-Each entry is either a sequence of keychords or a mouse event.
-A keychord is a combination of one key with optional modifiers,
-like 'b', 'ctrl-alt-a' or 'win-rctrl-backspace'. It can also
-be just modifiers without a key: 'ctrl-alt'
-
-You can combine up to 17 chords into a sequence using commas: 'ctrl-c,ctrl-v'
-
-#+begin_src ron
-            buttons: [
-                ["ctrl-a,ctrl-s", "b", "c", "d"],
-                ["e", "f", "alt-shift", "h"],
-                ["i", "j", "k", "l"],
-            ],
-#+end_src
-
-*** Rotary Encoders
-
-Rotary encoders (aka knobs) are listed from left to right if horizontal
-and from top to bottom if vertical. They can be rotated counter-clockwise (ccw) or clockwise (cw)
-and pressed down like a button
-
-#+begin_src ron
-            knobs: [
-                (ccw: "volumedown", press: "mute", cw: "volumeup"),
-                (ccw: "1", press: "2", cw: "3"),
-            ],
-        ),
-#+end_src
-
-*** Mouse Events
-
-Mouse events are clicks ('click', 'rclick', 'mclick') or
-wheel events ('wheelup', 'wheeldown') with one optional modifier,
-only 'ctrl', 'shift' and 'alt' are supported ('ctrl-wheeldown')
-Clicks may combine several buttons, like this: 'click+rclick'
-
-#+begin_src ron
-        (
-            buttons: [
-                ["click", "mclick", "rclick", "2"],
-                ["wheelup", "2", "wheeldown", "2"],
-                ["2", "ctrl-wheelup", "2", "ctrl-wheeldown"],
-            ],
-            knobs: [
-                (ccw: "2", press: "2", cw: "2"),
-                (ccw: "2", press: "2", cw: "2"),
-            ],
-        ),
-#+end_src
-
-*** Multimedia Support
-
-Multimedia commands are also supported. Howerver, they cannot be mixed with normal keys and modifiers
-
-#+begin_src ron
-        (
-            buttons: [
-                ["ctrl-m", "ctrl-slash", "space", "p"],
-                ["ctrl-rightbracket", "ctrl-leftbracket", "right", "left"],
-                ["play", "volumeup", "volumedown", "next"],
-            ],
-            knobs: [
-                (ccw: "3", press: "mute", cw: "3"),
-                (ccw: "3", press: "3", cw: "3"),
-            ],
-        ),
-    ],
-)
-#+end_src
-
-** Orientation
-
-Normal macropad orienation is when buttons are on the left
-side and rotary encoders are on the right. However, you may want to use
-the macropad in another orienation. To avoid remapping button
-positions in your head, just set it here.
 Possible values are:
   (horizontal)
   - 'normal': buttons on the left, rotary encoders on the right
@@ -309,6 +190,7 @@ macropad-tool show-keys
 ** Validate configuration
 
 #+begin_example
+macropad-tool validate -h
 macropad-tool validate # by default looks for a mapping.ron file
 macropad-tool validate -c <ron_file>  # to specify a different configuration file
 #+end_example
@@ -317,6 +199,7 @@ macropad-tool validate -c <ron_file>  # to specify a different configuration fil
 Needs root access or ensure udev rules was added. For Windows, need Administrator command prompt
 
 #+begin_example
+macropad-tool program -h
 macropad-tool program # by defult looks for a mapping.ron file
 macropad-tool program -c <ron_file>  # to specify a different configuration file
 #+end_example
