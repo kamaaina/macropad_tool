@@ -72,6 +72,7 @@ use std::fs::File;
 use std::str::FromStr;
 
 use crate::config::Orientation;
+use crate::consts;
 use crate::keyboard::{MediaCode, Modifier, WellKnownCode};
 
 pub struct Mapping {}
@@ -100,7 +101,21 @@ impl Mapping {
         println!("{s}");
     }
 
-    pub fn validate(cfg_file: &str) -> anyhow::Result<()> {
+    pub fn validate(cfg_file: &str, pid: Option<u16>) -> anyhow::Result<()> {
+        // get the maximum number a key can be programmed for
+        let mut max_programmable_keys = 0xff;
+        if let Some(max) = pid {
+            match max {
+                0x8840 | 0x8842 => max_programmable_keys = consts::MAX_KEY_PRESSES_884X,
+                0x8890 => max_programmable_keys = consts::MAX_KEY_PRESSES_8890,
+                _ => {
+                    let err_msg = format!("Unknown product id 0x{:02x}", pid.unwrap());
+                    return Err(anyhow!(err_msg));
+                }
+            }
+        }
+        debug!("max_programmable_keys: {max_programmable_keys}");
+
         // check layers
         let cfg = Self::read(cfg_file);
 
@@ -137,9 +152,11 @@ impl Mapping {
 
                 // check the individual button
                 for (k, btn) in btn_mapping.iter().enumerate() {
-                    if Self::validate_key_mapping(btn).is_err() {
+                    let retval = Self::validate_key_mapping(btn, max_programmable_keys);
+                    if retval.is_err() {
                         return Err(anyhow!(
-                            "unknown key '{}' at layer {} row {} button {}",
+                            "{} -- '{}' at layer {} row {} button {}",
+                            retval.err().unwrap(),
                             btn,
                             i + 1,
                             j + 1,
@@ -161,25 +178,31 @@ impl Mapping {
 
             // knob button mapping
             for (k, knob) in layer.knobs.iter().enumerate() {
-                if Self::validate_key_mapping(&knob.ccw).is_err() {
+                let retval = Self::validate_key_mapping(&knob.ccw, max_programmable_keys);
+                if retval.is_err() {
                     return Err(anyhow!(
-                        "unknown key '{}' at layer {} knob {} in ccw",
+                        "{} - key '{}' at layer {} knob {} in ccw",
+                        retval.err().unwrap(),
                         &knob.ccw,
                         i + 1,
                         k + 1
                     ));
                 }
-                if Self::validate_key_mapping(&knob.press).is_err() {
+                let retval = Self::validate_key_mapping(&knob.press, max_programmable_keys);
+                if retval.is_err() {
                     return Err(anyhow!(
-                        "unknown key '{}' at layer {} knob {} in press",
+                        "{} - key '{}' at layer {} knob {} in press",
+                        retval.err().unwrap(),
                         &knob.press,
                         i + 1,
                         k + 1
                     ));
                 }
-                if Self::validate_key_mapping(&knob.cw).is_err() {
+                let retval = Self::validate_key_mapping(&knob.cw, max_programmable_keys);
+                if retval.is_err() {
                     return Err(anyhow!(
-                        "unknown key '{}' at layer {} knob {} in cw",
+                        "{} - key '{}' at layer {} knob {} in cw",
+                        retval.err().unwrap(),
                         &knob.cw,
                         i + 1,
                         k + 1
@@ -191,23 +214,16 @@ impl Mapping {
         Ok(())
     }
 
-    fn validate_key_mapping(key: &str) -> Result<()> {
+    fn validate_key_mapping(key: &str, max_size: usize) -> Result<()> {
         let keys: Vec<_> = key.split(',').collect();
 
-        /*
-           TODO:
-           Need to figure out a way to do this as it's keyboard dependent. for now,
-           programming will fail with the right error messge so we'll skip this
-           check validating the configuration file for now...
-
         // ensure we don't go over max
-        if keys.len() > consts::MAX_KEY_PRESSES {
+        if keys.len() > max_size {
             return Err(anyhow!(
-                "One key can be mapped to a maximum of {} key presses",
-                consts::MAX_KEY_PRESSES
+                "Too many keys to map. One key can be mapped to a maximum of {} key presses",
+                max_size
             ));
         }
-        */
 
         // check individual keys
         for k in keys {
@@ -309,7 +325,7 @@ mod tests {
 
     #[test]
     fn mapping_validate() -> anyhow::Result<()> {
-        Mapping::validate("./mapping.ron")?;
+        Mapping::validate("./mapping.ron", None)?;
         Ok(())
     }
 }
