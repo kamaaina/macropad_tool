@@ -36,7 +36,7 @@ pub struct Device {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Layer {
-    pub buttons: Vec<Vec<String>>,
+    pub buttons: Vec<Vec<Button>>,
     pub knobs: Vec<Knob>,
 }
 
@@ -44,26 +44,41 @@ impl Layer {
     pub fn new(rows: u8, cols: u8, num_knobs: u8) -> Self {
         let mut buttons = Vec::new();
         for _i in 0..rows {
-            buttons.push(vec![String::new(); cols.into()]);
+            buttons.push(vec![Button::new(); cols.into()]);
         }
 
         let mut knobs = Vec::new();
         for _i in 0..num_knobs {
             knobs.push(Knob {
-                ccw: String::new(),
-                press: String::new(),
-                cw: String::new(),
+                ccw: Button::new(),
+                press: Button::new(),
+                cw: Button::new(),
             });
         }
         Self { buttons, knobs }
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Button {
+    pub delay: u16,
+    pub mapping: String,
+}
+
+impl Button {
+    pub fn new() -> Self {
+        Self {
+            delay: 0,
+            mapping: String::new(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Knob {
-    pub ccw: String,
-    pub press: String,
-    pub cw: String,
+    pub ccw: Button,
+    pub press: Button,
+    pub cw: Button,
 }
 
 use ron::de::from_reader;
@@ -152,12 +167,12 @@ impl Mapping {
 
                 // check the individual button
                 for (k, btn) in btn_mapping.iter().enumerate() {
-                    let retval = Self::validate_key_mapping(btn, max_programmable_keys);
+                    let retval = Self::validate_key_mapping(&btn.mapping, max_programmable_keys);
                     if retval.is_err() {
                         return Err(anyhow!(
                             "{} -- '{}' at layer {} row {} button {}",
                             retval.err().unwrap(),
-                            btn,
+                            btn.mapping,
                             i + 1,
                             j + 1,
                             k + 1
@@ -178,32 +193,32 @@ impl Mapping {
 
             // knob button mapping
             for (k, knob) in layer.knobs.iter().enumerate() {
-                let retval = Self::validate_key_mapping(&knob.ccw, max_programmable_keys);
+                let retval = Self::validate_key_mapping(&knob.ccw.mapping, max_programmable_keys);
                 if retval.is_err() {
                     return Err(anyhow!(
                         "{} - key '{}' at layer {} knob {} in ccw",
                         retval.err().unwrap(),
-                        &knob.ccw,
+                        &knob.ccw.mapping,
                         i + 1,
                         k + 1
                     ));
                 }
-                let retval = Self::validate_key_mapping(&knob.press, max_programmable_keys);
+                let retval = Self::validate_key_mapping(&knob.press.mapping, max_programmable_keys);
                 if retval.is_err() {
                     return Err(anyhow!(
                         "{} - key '{}' at layer {} knob {} in press",
                         retval.err().unwrap(),
-                        &knob.press,
+                        &knob.press.mapping,
                         i + 1,
                         k + 1
                     ));
                 }
-                let retval = Self::validate_key_mapping(&knob.cw, max_programmable_keys);
+                let retval = Self::validate_key_mapping(&knob.cw.mapping, max_programmable_keys);
                 if retval.is_err() {
                     return Err(anyhow!(
                         "{} - key '{}' at layer {} knob {} in cw",
                         retval.err().unwrap(),
-                        &knob.cw,
+                        &knob.cw.mapping,
                         i + 1,
                         k + 1
                     ));

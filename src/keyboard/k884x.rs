@@ -101,23 +101,35 @@ impl Configuration for Keyboard884x {
                     "   key: {} at row: {} col: {}",
                     km.key_number, row_col.0, row_col.1
                 );
-                mp.layers[(km.layer - 1) as usize].buttons[row_col.0][row_col.1] =
+
+                mp.layers[(km.layer - 1) as usize].buttons[row_col.0][row_col.1].delay = km.delay;
+                mp.layers[(km.layer - 1) as usize].buttons[row_col.0][row_col.1].mapping =
                     km.keys.join(",");
             } else {
                 // knobs
                 debug!("knob idx: {} knob type: {}", knob_idx, knob_type);
                 match knob_type {
                     0 => {
-                        mp.layers[(km.layer - 1) as usize].knobs[knob_idx].ccw = km.keys.join("-");
+                        mp.layers[(km.layer - 1) as usize].knobs[knob_idx].ccw.delay = km.delay;
+                        mp.layers[(km.layer - 1) as usize].knobs[knob_idx]
+                            .ccw
+                            .mapping = km.keys.join("-");
                         knob_type += 1;
                     }
                     1 => {
-                        mp.layers[(km.layer - 1) as usize].knobs[knob_idx].press =
-                            km.keys.join("-");
+                        mp.layers[(km.layer - 1) as usize].knobs[knob_idx]
+                            .press
+                            .delay = km.delay;
+                        mp.layers[(km.layer - 1) as usize].knobs[knob_idx]
+                            .press
+                            .mapping = km.keys.join("-");
                         knob_type += 1;
                     }
                     2 => {
-                        mp.layers[(km.layer - 1) as usize].knobs[knob_idx].cw = km.keys.join("-");
+                        mp.layers[(km.layer - 1) as usize].knobs[knob_idx].cw.delay = km.delay;
+                        mp.layers[(km.layer - 1) as usize].knobs[knob_idx]
+                            .cw
+                            .mapping = km.keys.join("-");
                         knob_type = 0;
                         knob_idx += 1;
                     }
@@ -190,8 +202,8 @@ impl Keyboard for Keyboard884x {
             let mut j = 1;
             for row in &layer.buttons {
                 for btn in row {
-                    debug!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, j);
-                    self.send(&self.build_key_msg(btn.to_string(), lyr, j, 0)?)?;
+                    debug!("program layer: {} key: 0x{:02x} to: {btn:?}", i + 1, j);
+                    self.send(&self.build_key_msg(btn.mapping.to_string(), lyr, j, 0)?)?;
                     j += 1;
                 }
             }
@@ -199,21 +211,31 @@ impl Keyboard for Keyboard884x {
             // TODO: test 9x3 to see if the 3 knobs are top to bottom with key number
             j = 0x10;
             for knob in &layer.knobs {
-                debug!("layer: {} key: 0x{:02x} knob cw {}", i + 1, j, knob.cw);
-                self.send(&self.build_key_msg(knob.cw.clone(), lyr, j, 0)?)?;
+                debug!(
+                    "layer: {} key: 0x{:02x} knob cw {}",
+                    i + 1,
+                    j,
+                    knob.cw.mapping
+                );
+                self.send(&self.build_key_msg(knob.cw.mapping.clone(), lyr, j, 0)?)?;
                 j += 1;
 
                 debug!(
                     "layer: {} key: 0x{:02x} knob press {}",
                     i + 1,
                     j,
-                    knob.press
+                    knob.press.mapping
                 );
-                self.send(&self.build_key_msg(knob.press.clone(), lyr, j, 0)?)?;
+                self.send(&self.build_key_msg(knob.press.mapping.clone(), lyr, j, 0)?)?;
                 j += 1;
 
-                debug!("layer: {} key: 0x{:02x} knob ccw {}", i + 1, j, knob.ccw);
-                self.send(&self.build_key_msg(knob.ccw.clone(), lyr, j, 0)?)?;
+                debug!(
+                    "layer: {} key: 0x{:02x} knob ccw {}",
+                    i + 1,
+                    j,
+                    knob.ccw.mapping
+                );
+                self.send(&self.build_key_msg(knob.ccw.mapping.clone(), lyr, j, 0)?)?;
                 j += 1;
             }
         }
