@@ -203,7 +203,12 @@ impl Keyboard for Keyboard884x {
             for row in &layer.buttons {
                 for btn in row {
                     debug!("program layer: {} key: 0x{:02x} to: {btn:?}", i + 1, j);
-                    self.send(&self.build_key_msg(btn.mapping.to_string(), lyr, j, 0)?)?;
+                    self.send(&self.build_key_msg(&btn.mapping, lyr, j, 0)?)?;
+                    if btn.delay > 0 {
+                        let mut msg = self.build_key_msg(&btn.mapping, lyr, j, btn.delay)?;
+                        msg[4] = 5;
+                        self.send(&msg)?;
+                    }
                     j += 1;
                 }
             }
@@ -217,7 +222,12 @@ impl Keyboard for Keyboard884x {
                     j,
                     knob.cw.mapping
                 );
-                self.send(&self.build_key_msg(knob.cw.mapping.clone(), lyr, j, 0)?)?;
+                self.send(&self.build_key_msg(&knob.cw.mapping, lyr, j, 0)?)?;
+                if knob.cw.delay > 0 {
+                    let mut msg = self.build_key_msg(&knob.cw.mapping, lyr, j, knob.cw.delay)?;
+                    msg[4] = 5;
+                    self.send(&msg)?;
+                }
                 j += 1;
 
                 debug!(
@@ -226,7 +236,13 @@ impl Keyboard for Keyboard884x {
                     j,
                     knob.press.mapping
                 );
-                self.send(&self.build_key_msg(knob.press.mapping.clone(), lyr, j, 0)?)?;
+                self.send(&self.build_key_msg(&knob.press.mapping, lyr, j, 0)?)?;
+                if knob.press.delay > 0 {
+                    let mut msg =
+                        self.build_key_msg(&knob.press.mapping, lyr, j, knob.press.delay)?;
+                    msg[4] = 5;
+                    self.send(&msg)?;
+                }
                 j += 1;
 
                 debug!(
@@ -235,7 +251,12 @@ impl Keyboard for Keyboard884x {
                     j,
                     knob.ccw.mapping
                 );
-                self.send(&self.build_key_msg(knob.ccw.mapping.clone(), lyr, j, 0)?)?;
+                self.send(&self.build_key_msg(&knob.ccw.mapping, lyr, j, 0)?)?;
+                if knob.ccw.delay > 0 {
+                    let mut msg = self.build_key_msg(&knob.ccw.mapping, lyr, j, knob.ccw.delay)?;
+                    msg[4] = 5;
+                    self.send(&msg)?;
+                }
                 j += 1;
             }
         }
@@ -279,15 +300,21 @@ impl Keyboard884x {
 
     fn build_key_msg(
         &self,
-        key_chord: String,
+        key_chord: &str,
         layer: u8,
         key_pos: u8,
-        _delay: u16,
+        delay: u16,
     ) -> Result<Vec<u8>> {
         let keys: Vec<_> = key_chord.split(',').collect();
         let mut msg = vec![0x03, 0xfd, key_pos, layer, 0x01];
         msg.extend_from_slice(&[0; 5]);
         msg.extend_from_slice(&[keys.len().try_into()?]);
+
+        if delay > 0 {
+            let bytes = delay.to_le_bytes();
+            msg[5] = bytes[0];
+            msg[6] = bytes[1];
+        }
 
         let mut cnt = 0;
         let mut mouse_action = 0u8;
@@ -384,7 +411,7 @@ mod tests {
         // ctrl-a,ctrl-s
         // 03 fd 01 01 01 00 00 00     00 00 02 01 04 01 16 00   00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("ctrl-a,ctrl-s".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("ctrl-a,ctrl-s", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[10], 0x02, "checking number of keys to program");
@@ -398,7 +425,7 @@ mod tests {
     #[test]
     fn well_known_key() -> anyhow::Result<()> {
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("a".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("a", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[10], 0x01, "checking number of keys to program");
@@ -411,7 +438,7 @@ mod tests {
     fn volume_down() -> anyhow::Result<()> {
         // 03 fd 10 01 02 00 00 00     00 00 02 ea 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("volumedown".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("volumedown", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x02, "checking byte 4");
@@ -427,7 +454,7 @@ mod tests {
     fn mouse_ctrl_plus() -> anyhow::Result<()> {
         // 03 fd 01 02 03 00 00 00     00 00 01 01 00 00 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("ctrl-wheelup".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("ctrl-wheelup", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
@@ -444,7 +471,7 @@ mod tests {
     fn mouse_ctrl_minus() -> anyhow::Result<()> {
         // 03 fd 02 02 03 00 00 00     00 00 01 01 00 00 00 ff 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("ctrl-wheeldown".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("ctrl-wheeldown", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
@@ -461,7 +488,7 @@ mod tests {
     fn mouse_left_click() -> anyhow::Result<()> {
         // 03 fd 01 02 03 00 00 00     00 00 01 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("click".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("click", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
@@ -478,7 +505,7 @@ mod tests {
     fn mouse_middle_click() -> anyhow::Result<()> {
         // 03 fd 02 02 03 00 00 00     00 00 01 00 04 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("mclick".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("mclick", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
@@ -495,7 +522,7 @@ mod tests {
     fn mouse_right_click() -> anyhow::Result<()> {
         // 03 fd 03 02 03 00 00 00     00 00 01 00 02 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("rclick".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("rclick", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
@@ -512,7 +539,7 @@ mod tests {
     fn shift_p() -> anyhow::Result<()> {
         // 03 fd 06 01 01 00 00 00      00 00 01 02 13 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("shift-p".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("shift-p", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x01, "checking byte 4");
@@ -529,7 +556,7 @@ mod tests {
     fn win_enter() -> anyhow::Result<()> {
         // 03 fd 11 03 01 00 00 00      00 00 01 08 28 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
         let kbd = Keyboard884x::new(None, 0, 0)?;
-        let msg = kbd.build_key_msg("win-enter".to_string(), 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("win-enter", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x01, "checking byte 4");
