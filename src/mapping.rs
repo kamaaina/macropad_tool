@@ -167,7 +167,7 @@ impl Mapping {
 
                 // check the individual button
                 for (k, btn) in btn_mapping.iter().enumerate() {
-                    let retval = Self::validate_key_mapping(&btn.mapping, max_programmable_keys);
+                    let retval = Self::validate_key_mapping(btn, max_programmable_keys);
                     if retval.is_err() {
                         return Err(anyhow!(
                             "{} -- '{}' at layer {} row {} button {}",
@@ -193,7 +193,7 @@ impl Mapping {
 
             // knob button mapping
             for (k, knob) in layer.knobs.iter().enumerate() {
-                let retval = Self::validate_key_mapping(&knob.ccw.mapping, max_programmable_keys);
+                let retval = Self::validate_key_mapping(&knob.ccw, max_programmable_keys);
                 if retval.is_err() {
                     return Err(anyhow!(
                         "{} - key '{}' at layer {} knob {} in ccw",
@@ -203,7 +203,7 @@ impl Mapping {
                         k + 1
                     ));
                 }
-                let retval = Self::validate_key_mapping(&knob.press.mapping, max_programmable_keys);
+                let retval = Self::validate_key_mapping(&knob.press, max_programmable_keys);
                 if retval.is_err() {
                     return Err(anyhow!(
                         "{} - key '{}' at layer {} knob {} in press",
@@ -213,7 +213,7 @@ impl Mapping {
                         k + 1
                     ));
                 }
-                let retval = Self::validate_key_mapping(&knob.cw.mapping, max_programmable_keys);
+                let retval = Self::validate_key_mapping(&knob.cw, max_programmable_keys);
                 if retval.is_err() {
                     return Err(anyhow!(
                         "{} - key '{}' at layer {} knob {} in cw",
@@ -229,14 +229,27 @@ impl Mapping {
         Ok(())
     }
 
-    fn validate_key_mapping(key: &str, max_size: usize) -> Result<()> {
-        let keys: Vec<_> = key.split(',').collect();
-
+    fn validate_key_mapping(btn: &Button, max_size: usize) -> Result<()> {
         // ensure we don't go over max
+        let keys: Vec<_> = btn.mapping.split(',').collect();
         if keys.len() > max_size {
             return Err(anyhow!(
                 "Too many keys to map. One key can be mapped to a maximum of {} key presses",
                 max_size
+            ));
+        }
+
+        // check delay
+        if max_size == consts::MAX_KEY_PRESSES_8890 {
+            if btn.delay > 0 {
+                println!(
+                    "Warning - 0x8890 devices do not support the delay feature - delay value [{}] will be ignored", btn.delay
+                );
+            }
+        } else if btn.delay > consts::MAX_DELAY {
+            return Err(anyhow!(
+                "delay value [{}] must be between 0 and 6000 msec",
+                btn.delay
             ));
         }
 
@@ -331,6 +344,7 @@ impl Mapping {
 #[cfg(test)]
 mod tests {
 
+    use crate::mapping::Button;
     use crate::{consts, mapping::Mapping};
 
     #[test]
@@ -355,41 +369,110 @@ mod tests {
     }
 
     #[test]
+    fn bad_delay_884x() {
+        assert!(Mapping::validate_key_mapping(
+            &Button {
+                delay: 6001,
+                mapping: "t,e,s,t".to_string()
+            },
+            consts::MAX_KEY_PRESSES_884X
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn test_delay() -> anyhow::Result<()> {
+        Mapping::validate_key_mapping(
+            &Button {
+                delay: 6000,
+                mapping: "t,e,s,t".to_string(),
+            },
+            consts::MAX_KEY_PRESSES_884X,
+        )?;
+        Mapping::validate_key_mapping(
+            &Button {
+                delay: 1234,
+                mapping: "t,e,s,t".to_string(),
+            },
+            consts::MAX_KEY_PRESSES_8890,
+        )?;
+        Ok(())
+    }
+
+    #[test]
     fn mapping_multiple_modifiers_8890() {
-        assert!(
-            Mapping::validate_key_mapping("ctrl-a,shift-s", consts::MAX_KEY_PRESSES_8890).is_err()
-        );
-        assert!(
-            Mapping::validate_key_mapping("alt-a,ctrl-s", consts::MAX_KEY_PRESSES_8890).is_err()
-        );
-        assert!(
-            Mapping::validate_key_mapping("shift-a,alt-s", consts::MAX_KEY_PRESSES_8890).is_err()
-        );
+        assert!(Mapping::validate_key_mapping(
+            &Button {
+                delay: 0,
+                mapping: "ctrl-a,shift-s".to_string()
+            },
+            consts::MAX_KEY_PRESSES_8890
+        )
+        .is_err());
+        assert!(Mapping::validate_key_mapping(
+            &Button {
+                delay: 0,
+                mapping: "alt-a,ctrl-s".to_string()
+            },
+            consts::MAX_KEY_PRESSES_8890
+        )
+        .is_err());
+        assert!(Mapping::validate_key_mapping(
+            &Button {
+                delay: 0,
+                mapping: "shift-a,alt-s".to_string()
+            },
+            consts::MAX_KEY_PRESSES_8890
+        )
+        .is_err());
     }
 
     #[test]
     fn mapping_max_size_8890() -> anyhow::Result<()> {
-        Mapping::validate_key_mapping("1,2,3,4,5", consts::MAX_KEY_PRESSES_8890)?;
-        assert!(
-            Mapping::validate_key_mapping("1,2,3,4,5,6", consts::MAX_KEY_PRESSES_8890).is_err()
-        );
+        Mapping::validate_key_mapping(
+            &Button {
+                delay: 0,
+                mapping: "1,2,3,4,5".to_string(),
+            },
+            consts::MAX_KEY_PRESSES_8890,
+        )?;
+        assert!(Mapping::validate_key_mapping(
+            &Button {
+                delay: 0,
+                mapping: "1,2,3,4,5,6".to_string()
+            },
+            consts::MAX_KEY_PRESSES_8890
+        )
+        .is_err());
         Ok(())
     }
 
     #[test]
     fn mapping_multiple_modifiers_8840() -> anyhow::Result<()> {
-        Mapping::validate_key_mapping("ctrl-a,shift-s", consts::MAX_KEY_PRESSES_884X)?;
+        Mapping::validate_key_mapping(
+            &Button {
+                delay: 0,
+                mapping: "ctrl-a,shift-s".to_string(),
+            },
+            consts::MAX_KEY_PRESSES_884X,
+        )?;
         Ok(())
     }
 
     #[test]
     fn mapping_max_size_8840() -> anyhow::Result<()> {
         Mapping::validate_key_mapping(
-            "1,2,3,4,5,6,7,8,9,0,a,b,c,d,e,f,g",
+            &Button {
+                delay: 0,
+                mapping: "1,2,3,4,5,6,7,8,9,0,a,b,c,d,e,f,g".to_string(),
+            },
             consts::MAX_KEY_PRESSES_884X,
         )?;
         assert!(Mapping::validate_key_mapping(
-            "1,2,3,4,5,6,7,8,9,0,a,b,c,d,e,f,g,h",
+            &Button {
+                delay: 0,
+                mapping: "1,2,3,4,5,6,7,8,9,0,a,b,c,d,e,f,g,h".to_string()
+            },
             consts::MAX_KEY_PRESSES_884X
         )
         .is_err());
