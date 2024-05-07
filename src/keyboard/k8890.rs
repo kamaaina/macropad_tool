@@ -57,15 +57,19 @@ impl Keyboard for Keyboard8890 {
             let mut key_num = 1;
             for row in &layer.buttons {
                 for btn in row {
-                    debug!("program layer: {} key: 0x{:02x} to: {btn}", i + 1, key_num);
-                    let keys: Vec<_> = btn.split(',').collect();
+                    debug!(
+                        "program layer: {} key: 0x{:02x} to: {btn:?}",
+                        i + 1,
+                        key_num
+                    );
+                    let keys: Vec<_> = btn.mapping.split(',').collect();
                     if keys.len() > consts::MAX_KEY_PRESSES_8890 {
                         return Err(anyhow!(
                             "maximum key presses for this macropad is {}",
                             consts::MAX_KEY_PRESSES_8890
                         ));
                     }
-                    for msg in self.map_key(btn.to_string(), key_num)? {
+                    for msg in self.map_key(btn.mapping.to_string(), key_num)? {
                         self.send(&msg)?;
                     }
                     key_num += 1;
@@ -75,7 +79,7 @@ impl Keyboard for Keyboard8890 {
             for knob in &layer.knobs {
                 debug!(
                     "programming knob ccw: {} cw: {} push: {}",
-                    knob.ccw, knob.cw, knob.press
+                    knob.ccw.mapping, knob.cw.mapping, knob.press.mapping
                 );
                 let mut btn;
                 for i in 0..3 {
@@ -85,14 +89,14 @@ impl Keyboard for Keyboard8890 {
                         2 => btn = knob.cw.clone(),
                         _ => unreachable!("should not get here"),
                     }
-                    let keys: Vec<_> = btn.split(',').collect();
+                    let keys: Vec<_> = btn.mapping.split(',').collect();
                     if keys.len() > consts::MAX_KEY_PRESSES_8890 {
                         return Err(anyhow!(
                             "maximum key presses for this macropad is {}",
                             consts::MAX_KEY_PRESSES_8890
                         ));
                     }
-                    for msg in self.map_key(btn.to_string(), key_num)? {
+                    for msg in self.map_key(btn.mapping.to_string(), key_num)? {
                         self.send(&msg)?;
                     }
                     key_num += 1;

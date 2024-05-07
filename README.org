@@ -108,12 +108,15 @@ be just modifiers without a key: 'ctrl-alt'
 
 You can combine up to 17 chords into a sequence using commas: 'ctrl-c,ctrl-v'
 
+If you have a 0x884x product id, you can use the delay feature. This puts a delay between each key sequence. In the example below,
+when typeing out 'foo@bar.com' it will insert a 1000 msec delay between each keystroke. the maximum delay is 6000 msec. For all other product
+id's, the software will ignore the delay value when programming the macropad
+
 #+begin_src ron
             buttons: [
-                ["ctrl-a,ctrl-s", "b", "c", "d"],
-                ["e", "f", "alt-shift", "h"],
-                ["i", "j", "k", "l"],
-            ],
+                [(delay: 0, mapping: "ctrl-b"), (delay: 0, mapping: "ctrl-leftbracket"), (delay: 0, mapping: "ctrl-m") (delay: 0, mapping: "d")],
+                [(delay: 0, mapping: "ctrl-e"), (delay: 0, mapping: "ctrl-rightbracket"), (delay: 0, mapping: "ctrl-slash"), (delay: 0, mapping: "d")],
+                [(delay: 0, mapping: "space"), (delay: 1000, mapping: "f,o,o,shift-2,b,a,r,dot,c,o,m"), (delay: 0, mapping: "shift-p"), (delay: 0, mapping: "d")],
 #+end_src
 
 *** Rotary Encoders
@@ -124,8 +127,8 @@ and pressed down like a button
 
 #+begin_src ron
             knobs: [
-                (ccw: "volumedown", press: "mute", cw: "volumeup"),
-                (ccw: "1", press: "2", cw: "3"),
+                (ccw: (delay: 0, mapping: "3"), press: (delay: 0, mapping: "3"), cw: (delay: 0, mapping: "3")),
+                (ccw: (delay: 0, mapping: "volumedown"), press: (delay: 0, mapping: "mute"), cw: (delay: 0, mapping: "volumeup")),
             ],
         ),
 #+end_src
@@ -140,13 +143,13 @@ Clicks may combine several buttons, like this: 'click+rclick'
 #+begin_src ron
         (
             buttons: [
-                ["click", "mclick", "rclick", "2"],
-                ["wheelup", "2", "wheeldown", "2"],
-                ["2", "ctrl-wheelup", "2", "ctrl-wheeldown"],
+                [(delay: 0, mapping: "click"), (delay: 0, mapping: "mclick"), (delay: 0, mapping: "rclick"), (delay: 0, mapping: "d")],
+                [(delay: 0, mapping: "wheelup"), (delay: 0, mapping: "wheeldown"), (delay: 0, mapping: "space"), (delay: 0, mapping: "d")],
+                [(delay: 0, mapping: "ctrl-wheelup"), (delay: 0, mapping: "ctrl-wheeldown"), (delay: 0, mapping: "right"), (delay: 0, mapping: "d")],
             ],
             knobs: [
-                (ccw: "2", press: "2", cw: "2"),
-                (ccw: "2", press: "2", cw: "2"),
+                (ccw: (delay: 0, mapping: "3"), press: (delay: 0, mapping: "3"), cw: (delay: 0, mapping: "3")),
+                (ccw: (delay: 0, mapping: "volumedown"), press: (delay: 0, mapping: "mute"), cw: (delay: 0, mapping: "volumeup")),
             ],
         ),
 #+end_src
@@ -158,13 +161,13 @@ Multimedia commands are also supported. Howerver, they cannot be mixed with norm
 #+begin_src ron
         (
             buttons: [
-                ["ctrl-m", "ctrl-slash", "space", "p"],
-                ["ctrl-rightbracket", "ctrl-leftbracket", "right", "left"],
-                ["play", "volumeup", "volumedown", "next"],
+                [(delay: 0, mapping: "ctrl-m"), (delay: 0, mapping: "ctrl-slash"), (delay: 0, mapping: "space"), (delay: 0, mapping: "p")],
+                [(delay: 0, mapping: "volumeup"), (delay: 0, mapping: "volumedown"), (delay: 0, mapping: "play"), (delay: 0, mapping: "next")],
+                [(delay: 0, mapping: "ctrl-rightbracket"), (delay: 0, mapping: "ctrl-leftbracket"), (delay: 0, mapping: "right"), (delay: 0, mapping: "left")],
             ],
             knobs: [
-                (ccw: "3", press: "mute", cw: "3"),
-                (ccw: "3", press: "3", cw: "3"),
+                (ccw: (delay: 0, mapping: "3"), press: (delay: 0, mapping: "3"), cw: (delay: 0, mapping: "3")),
+                (ccw: (delay: 0, mapping: "volumedown"), press: (delay: 0, mapping: "mute"), cw: (delay: 0, mapping: "volumeup")),
             ],
         ),
     ],

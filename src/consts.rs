@@ -28,7 +28,6 @@ pub const MAX_KEY_PRESSES_8890: usize = 5;
 
 /// Maximum delay for a keypress
 ///
-#[allow(unused)]
 pub const MAX_DELAY: u16 = 6000;
 
 /// Packet size
