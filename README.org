@@ -12,7 +12,8 @@
   - [[#udev-rules-for-linux][udev rules for linux]]
   - [[#supported-keys][Supported keys]]
   - [[#validate-configuration][Validate configuration]]
-  - [[#write-to-keyboard][Write to keyboard]]
+  - [[#program-the-keyboard][Program the keyboard]]
+  - [[#led-support][LED Support]]
 - [[#windows][Windows]]
   - [[#compiling][Compiling]]
   - [[#running-the-application][Running the Application]]
@@ -199,13 +200,21 @@ macropad-tool validate # by default looks for a mapping.ron file
 macropad-tool validate -c <ron_file>  # to specify a different configuration file
 #+end_example
 
-** Write to keyboard
+** Program the keyboard
 Needs root access or ensure udev rules was added. For Windows, need Administrator command prompt
 
 #+begin_example
 macropad-tool program -h
 macropad-tool program # by defult looks for a mapping.ron file
 macropad-tool program -c <ron_file>  # to specify a different configuration file
+#+end_example
+
+** LED Support
+Some keyboards support LEDs and you can program the different modes via the led command
+
+#+begin_example
+macropad-tool led <mode> <color>
+macropad-tool led -h  # the help menu about different modes/colors
 #+end_example
 
 * Windows
