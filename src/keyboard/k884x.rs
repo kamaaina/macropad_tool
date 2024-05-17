@@ -13,9 +13,13 @@ use num::ToPrimitive;
 use rusb::{Context, DeviceHandle};
 use std::str::FromStr;
 
+/// 0x884x type keyboard
 pub struct Keyboard884x {
+    /// rusb device handle
     handle: Option<DeviceHandle<Context>>,
+    /// address of out endpoint
     out_endpoint: u8,
+    /// address of in endpoint
     in_endpoint: u8,
 }
 
@@ -442,8 +446,8 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x02, "checking byte 4");
-        for i in 5..=9 {
-            assert_eq!(msg[i], 0x00);
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
         }
         assert_eq!(msg[10], 0x02, "checking byte 10");
         assert_eq!(msg[11], 0xea, "checking byte 11");
@@ -458,8 +462,8 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
-        for i in 5..=9 {
-            assert_eq!(msg[i], 0x00);
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
         }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x01, "checking byte 11");
@@ -475,8 +479,8 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
-        for i in 5..=9 {
-            assert_eq!(msg[i], 0x00);
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
         }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x01, "checking byte 11");
@@ -492,8 +496,8 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
-        for i in 5..=9 {
-            assert_eq!(msg[i], 0x00);
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
         }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x00, "checking byte 11");
@@ -509,8 +513,8 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
-        for i in 5..=9 {
-            assert_eq!(msg[i], 0x00);
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
         }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x00, "checking byte 11");
@@ -526,8 +530,8 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
-        for i in 5..=9 {
-            assert_eq!(msg[i], 0x00);
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
         }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x00, "checking byte 11");
@@ -543,8 +547,8 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x01, "checking byte 4");
-        for i in 5..=9 {
-            assert_eq!(msg[i], 0x00);
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
         }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x02, "checking byte 11");
@@ -560,8 +564,8 @@ mod tests {
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), 65, "checking msg size");
         assert_eq!(msg[4], 0x01, "checking byte 4");
-        for i in 5..=9 {
-            assert_eq!(msg[i], 0x00);
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
         }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x08, "checking byte 11");

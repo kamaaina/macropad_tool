@@ -15,24 +15,79 @@ use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 use itertools::Itertools as _;
 
 pub trait Messages {
+    /// Returns the message to the macropad to get its configuration
+    ///
+    /// #Arguments
+    /// `keys` - number of keys on device
+    /// `encoders` - number of endoders on device
+    /// `layer` - layer to read
+    ///
     fn read_config(&self, keys: u8, encoders: u8, layer: u8) -> Vec<u8>;
+
+    /// Returns the message to get the device type
+    ///
     fn device_type(&self) -> Vec<u8>;
+
+    /// Returns the message to program the LEDs on the macropad based on the
+    /// specified `mode` and `color`
+    ///
+    /// #Arguments
+    /// `mode` - preset mode of the LED
+    /// `color` - the color to use for the mode
+    ///
     fn program_led(&self, mode: u8, color: LedColor) -> Vec<u8>;
+
+    /// Returns the "end of programming" message for the device. This message
+    /// effectively tell the device to 'save its configuration' so when it is
+    /// unplugged, it retains its settings
+    ///
     fn end_program(&self) -> Vec<u8>;
 }
 
 pub trait Configuration {
+    /// Returns the  Macropad with its configuration settings for the specified layer
+    ///
+    /// #Arguments
+    /// `layer` - layer to read configuration for
+    ///
     fn read_macropad_config(&mut self, layer: &u8) -> Result<Macropad>;
 }
 
 pub trait Keyboard: Messages + Configuration {
+    /// Programs the macropad based on the specified `Macropad`
+    ///
+    /// #Arguments
+    /// `macropad` - configuration to be programmed
+    ///
     fn program(&mut self, macropad: &Macropad) -> Result<()>;
+
+    /// Programs the LEDs on the macropad
+    ///
+    /// #Arguments
+    /// `mode` - preset mode of the LED
+    /// `color` - the color to use for the mode
+    ///
     fn set_led(&mut self, mode: u8, color: LedColor) -> Result<()>;
 
+    /// Returns the handle of the device
+    ///
     fn get_handle(&self) -> &DeviceHandle<Context>;
+
+    /// Returns the out endpoint of the device (write)
+    ///
     fn get_out_endpoint(&self) -> u8;
+
+    /// Returns the in endpoint of the device (read)
+    ///
     fn get_in_endpoint(&self) -> u8;
 
+    /// Sends the specified `msg` over usb to the out endpoint as an
+    /// USB Interrupt out message. Error is through if not all bytes
+    /// of the message could be sent
+    ///
+    /// #Arguments
+    /// `msg` - message to be sent
+    ///
     fn send(&mut self, msg: &[u8]) -> Result<()> {
         let written = self.get_handle().write_interrupt(
             self.get_out_endpoint(),
@@ -45,6 +100,11 @@ pub trait Keyboard: Messages + Configuration {
         Ok(())
     }
 
+    /// Reads data from macropad and stores it in buf
+    ///
+    /// #Arguments
+    /// `buf` - buffer to store the data that is read
+    ///
     fn recieve(&mut self, buf: &mut [u8]) -> Result<usize> {
         let read =
             self.get_handle()

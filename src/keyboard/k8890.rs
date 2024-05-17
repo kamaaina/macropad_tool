@@ -262,8 +262,8 @@ mod tests {
         let msgs = kbd.map_key("h,e,l,l,o".to_string(), 4)?;
         println!("{:02x?}", msgs);
         assert_eq!(msgs.len(), 6, "number of messages created");
-        for i in 0..6 {
-            assert_eq!(msgs[i].len(), consts::PACKET_SIZE, "checking msg size");
+        for i in msgs.iter().take(6) {
+            assert_eq!((*i).len(), consts::PACKET_SIZE, "checking msg size");
         }
 
         let expected = vec![0x03, 0x04, 0x11, 0x05, 0x00, 0x00];
@@ -298,8 +298,8 @@ mod tests {
         let kbd = Keyboard8890::new(None, 0)?;
         let msgs = kbd.map_key("ctrl-a,ctrl-s".to_string(), 3)?;
         println!("{:02x?}", msgs);
-        for i in 0..3 {
-            assert_eq!(msgs[i].len(), consts::PACKET_SIZE, "checking msg size");
+        for i in msgs.iter().take(3) {
+            assert_eq!((*i).len(), consts::PACKET_SIZE, "checking msg size");
         }
         assert_eq!(msgs.len(), 3, "number of messages created");
 

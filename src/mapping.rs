@@ -2,13 +2,23 @@ use anyhow::{anyhow, Result};
 use log::debug;
 use serde::{Deserialize, Serialize};
 
+/// Mapping configuration of a macropad
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Macropad {
+    /// Device configuration
     pub device: Device,
+    /// Layer configuration
     pub layers: Vec<Layer>,
 }
 
 impl Macropad {
+    /// Creates a new Macropad with the specified rows, cols, and knobs
+    ///
+    /// #Arguments
+    /// `rows` - number of rows
+    /// `cols` - number of columns
+    /// `knobs` - number of rotary encoders
+    ///
     pub fn new(rows: u8, cols: u8, knobs: u8) -> Self {
         Self {
             device: Device {
@@ -26,21 +36,36 @@ impl Macropad {
     }
 }
 
+/// Device configuration
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Device {
+    /// Orientation of device
     pub orientation: String,
+    /// Number of rows
     pub rows: u8,
+    /// Number of columns
     pub cols: u8,
+    /// Number of knobs
     pub knobs: u8,
 }
 
+/// Layer configuration
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Layer {
+    /// Key mappings
     pub buttons: Vec<Vec<Button>>,
+    /// Rotary encoder mappings
     pub knobs: Vec<Knob>,
 }
 
 impl Layer {
+    /// Creates a new empty mapping structure for a layer given device configuration
+    ///
+    /// #Arguments
+    /// `rows` - number of rows
+    /// `cols` - number of columns
+    /// `knobs` - number of rotary encoders
+    ///
     pub fn new(rows: u8, cols: u8, num_knobs: u8) -> Self {
         let mut buttons = Vec::new();
         for _i in 0..rows {
@@ -59,13 +84,18 @@ impl Layer {
     }
 }
 
+/// Mapping for a button
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Button {
+    /// Delay value (only used if mapping is a keychord; has ',' for key presses)
     pub delay: u16,
+    /// Mapping for the button
     pub mapping: String,
 }
 
 impl Button {
+    /// Creates a new Button with 0 delay and empty mapping
+    ///
     pub fn new() -> Self {
         Self {
             delay: 0,
@@ -74,10 +104,14 @@ impl Button {
     }
 }
 
+/// Mapping for a knob
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Knob {
+    /// Counter-Clockwise turn
     pub ccw: Button,
+    /// Pressing the knob
     pub press: Button,
+    /// Clockwise turn
     pub cw: Button,
 }
 
@@ -93,6 +127,11 @@ use crate::keyboard::{MediaCode, Modifier, WellKnownCode};
 pub struct Mapping {}
 
 impl Mapping {
+    /// Reads the specified configuration file and returns a Macropad
+    ///
+    /// #Arguments
+    /// `cfg_file` - configuration file to be read and parsed
+    ///
     pub fn read(cfg_file: &str) -> Macropad {
         debug!("configuration file: {}", cfg_file);
         let f = File::open(cfg_file).expect("Failed opening file");
@@ -106,6 +145,11 @@ impl Mapping {
         config
     }
 
+    /// Prints the Macropad to stdout
+    ///
+    /// #Arguments
+    /// `config` - macropad to be printed
+    ///
     pub fn print(config: Macropad) {
         let pretty = PrettyConfig::new()
             .depth_limit(4)
@@ -116,6 +160,14 @@ impl Mapping {
         println!("{s}");
     }
 
+    /// Validates the configuration against the specified product ID. If the product ID
+    ///  is not specified, does general validation. Returns `Result<Ok()>` on success; Err
+    /// otherwise
+    ///
+    /// #Arguments
+    /// `cfg_file` - configuration file to validate
+    /// `pid` - Optional product id to validate against
+    ///
     pub fn validate(cfg_file: &str, pid: Option<u16>) -> anyhow::Result<()> {
         // get the maximum number a key can be programmed for
         let mut max_programmable_keys = 0xff;

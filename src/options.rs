@@ -40,6 +40,12 @@ pub struct DevelOptions {
     pub interface_number: Option<u8>,
 }
 
+/// Parses a hex or decimal value and returns the value as u16. Currently,
+/// this is used for clap to parse the command line arguments
+///
+/// #Arguments
+/// `s` - the string to be parsed
+///
 pub fn u16_hex_or_decimal(s: &str) -> Result<u16, ParseIntError> {
     if s.to_ascii_lowercase().starts_with("0x") {
         u16::from_str_radix(&s[2..], 16)
@@ -48,6 +54,12 @@ pub fn u16_hex_or_decimal(s: &str) -> Result<u16, ParseIntError> {
     }
 }
 
+/// Parses a hex or decimal value and returns the value as u8. Currently,
+/// this is used for clap to parse the command line arguments
+///
+/// #Arguments
+/// `s` - the string to be parsed
+///
 pub fn u8_hex_or_decimal(s: &str) -> Result<u8, ParseIntError> {
     if s.to_ascii_lowercase().starts_with("0x") {
         u8::from_str_radix(&s[2..], 16)

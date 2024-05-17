@@ -12,16 +12,25 @@ pub struct KeyCode {
     wkc: Option<WellKnownCode>,
 }
 
+/// Macropad information
 pub struct DeviceInformation {
+    /// Number of keys on the macropad
     pub num_keys: u8,
+    /// Number of rotary encoders on the macropad
     pub num_encoders: u8,
 }
 
+/// Mapping of a key/encoder for the device
 #[derive(Debug)]
 pub struct KeyMapping {
+    /// Delay value which is used for msec delay between key presses
+    /// Valid values are 0-6000 inclusive
     pub delay: u16,
+    /// Layer to program
     pub layer: u8,
+    /// Key index on layer to program
     pub key_number: u8,
+    /// Essentially the keychord for the key
     pub keys: Vec<String>,
 }
 
@@ -215,24 +224,6 @@ impl Decoder {
         retval.join("-")
     }
 }
-
-// layer 3
-// key 1 = play/pause
-// 03fa010302000000000001cd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// key 2 = next track
-// 03fa020302000000000001b50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-
-// program key
-// layer 1 4 keys (abcd)
-// 03fd010101000000000004000400050006000700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// read
-// 03fa010101000000000004000400050006000700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-
-// program key
-// layer 1 one key (play/pause)
-// 03fd020102000000000002cd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-// read
-// 03fa020102000000000001cd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
 #[cfg(test)]
 mod tests {
