@@ -203,65 +203,71 @@ impl Keyboard for Keyboard884x {
 
         for (i, layer) in macropad.layers.iter().enumerate() {
             let lyr = (i + 1) as u8;
-            let mut j = 1;
+            let mut key_num = 1;
             for row in &layer.buttons {
                 for btn in row {
-                    debug!("program layer: {} key: 0x{:02x} to: {btn:?}", i + 1, j);
-                    self.send(&self.build_key_msg(&btn.mapping, lyr, j, 0)?)?;
+                    debug!(
+                        "program layer: {} key: 0x{:02x} to: {btn:?}",
+                        i + 1,
+                        key_num
+                    );
+                    self.send(&self.build_key_msg(&btn.mapping, lyr, key_num, 0)?)?;
                     if btn.delay > 0 {
-                        let mut msg = self.build_key_msg(&btn.mapping, lyr, j, btn.delay)?;
+                        let mut msg = self.build_key_msg(&btn.mapping, lyr, key_num, btn.delay)?;
                         msg[4] = 5;
                         self.send(&msg)?;
                     }
-                    j += 1;
+                    key_num += 1;
                 }
             }
 
             // TODO: test 9x3 to see if the 3 knobs are top to bottom with key number
-            j = 0x10;
+            key_num = 0x10;
             for knob in &layer.knobs {
                 debug!(
                     "layer: {} key: 0x{:02x} knob cw {}",
                     i + 1,
-                    j,
+                    key_num,
                     knob.cw.mapping
                 );
-                self.send(&self.build_key_msg(&knob.cw.mapping, lyr, j, 0)?)?;
+                self.send(&self.build_key_msg(&knob.cw.mapping, lyr, key_num, 0)?)?;
                 if knob.cw.delay > 0 {
-                    let mut msg = self.build_key_msg(&knob.cw.mapping, lyr, j, knob.cw.delay)?;
+                    let mut msg =
+                        self.build_key_msg(&knob.cw.mapping, lyr, key_num, knob.cw.delay)?;
                     msg[4] = 5;
                     self.send(&msg)?;
                 }
-                j += 1;
+                key_num += 1;
 
                 debug!(
                     "layer: {} key: 0x{:02x} knob press {}",
                     i + 1,
-                    j,
+                    key_num,
                     knob.press.mapping
                 );
-                self.send(&self.build_key_msg(&knob.press.mapping, lyr, j, 0)?)?;
+                self.send(&self.build_key_msg(&knob.press.mapping, lyr, key_num, 0)?)?;
                 if knob.press.delay > 0 {
                     let mut msg =
-                        self.build_key_msg(&knob.press.mapping, lyr, j, knob.press.delay)?;
+                        self.build_key_msg(&knob.press.mapping, lyr, key_num, knob.press.delay)?;
                     msg[4] = 5;
                     self.send(&msg)?;
                 }
-                j += 1;
+                key_num += 1;
 
                 debug!(
                     "layer: {} key: 0x{:02x} knob ccw {}",
                     i + 1,
-                    j,
+                    key_num,
                     knob.ccw.mapping
                 );
-                self.send(&self.build_key_msg(&knob.ccw.mapping, lyr, j, 0)?)?;
+                self.send(&self.build_key_msg(&knob.ccw.mapping, lyr, key_num, 0)?)?;
                 if knob.ccw.delay > 0 {
-                    let mut msg = self.build_key_msg(&knob.ccw.mapping, lyr, j, knob.ccw.delay)?;
+                    let mut msg =
+                        self.build_key_msg(&knob.ccw.mapping, lyr, key_num, knob.ccw.delay)?;
                     msg[4] = 5;
                     self.send(&msg)?;
                 }
-                j += 1;
+                key_num += 1;
             }
         }
         self.send(&self.end_program())?;
