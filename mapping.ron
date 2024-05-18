@@ -1,11 +1,13 @@
 (
     device: (
+        // normal, clockwise, counterclockwise, upsidedown
         orientation: "normal",
         rows: 2,
         cols: 3,
         knobs: 1,
     ),
     layers: [
+        // layer 1
         (
             buttons: [
                 [(delay: 0, mapping: "ctrl-a,ctrl-s"), (delay: 0, mapping:"b"), (delay: 0, mapping: "c")],
@@ -15,6 +17,7 @@
                 (ccw: (delay: 0, mapping: "volumedown"), press: (delay: 0, mapping: "mute"), cw: (delay: 0, mapping: "volumeup")),
             ],
         ),
+        // layer 2
         (
             buttons: [
                 [(delay: 0, mapping: "click"), (delay: 0, mapping: "rclick"), (delay: 0, mapping: "mclick")],
@@ -24,6 +27,7 @@
                 (ccw: (delay: 0, mapping: "2"), press: (delay: 0, mapping: "2"), cw: (delay: 0, mapping: "2")),
             ],
         ),
+        // layer 3
         (
             buttons: [
                 [(delay: 0, mapping: "ctrl-m"), (delay: 0, mapping: "ctrl-slash"), (delay: 0, mapping: "space")],

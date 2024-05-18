@@ -1,5 +1,5 @@
 use crate::{
-    consts,
+    config, consts,
     keyboard::{
         Configuration, Keyboard, LedColor, MediaCode, Messages, Modifier, MouseAction, MouseButton,
         WellKnownCode,
@@ -53,12 +53,24 @@ impl Keyboard for Keyboard8890 {
     fn program(&mut self, macropad: &Macropad) -> Result<()> {
         debug!("programming keyboard");
         self.send(&self.begin_programming())?;
+        let default_layout = self.default_key_numbers(macropad.device.rows, macropad.device.cols);
+        let layout = match macropad.device.orientation.as_str() {
+            "clockwise" => config::get_keys_clockwise(default_layout),
+            "coounterclockwise" => config::get_keys_counter_clockwise(default_layout),
+            "upsidedown" => config::get_keys_upsidedown(default_layout),
+            "normal" => default_layout,
+            _ => unreachable!("should not get here"),
+        };
         for (i, layer) in macropad.layers.iter().enumerate() {
             let mut key_num = 1;
+            let mut key_num2;
+            let mut col = 0;
             for row in &layer.buttons {
-                for btn in row {
+                for (idx, btn) in row.iter().enumerate() {
+                    // TODO: if this works, just rename to key_num and delete key_num2
+                    key_num2 = layout[idx][col];
                     debug!(
-                        "program layer: {} key: 0x{:02x} to: {btn:?}",
+                        "program layer: {} key: 0x{:02x} to: {btn:?} key2: {key_num2}",
                         i + 1,
                         key_num
                     );
@@ -73,6 +85,7 @@ impl Keyboard for Keyboard8890 {
                         self.send(&msg)?;
                     }
                     key_num += 1;
+                    col += 1;
                 }
             }
             key_num = 0x0du8;
