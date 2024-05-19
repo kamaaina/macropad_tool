@@ -56,8 +56,6 @@ side and rotary encoders are on the right. However, you may want to use
 the macropad in another orienation. To avoid remapping button
 positions in your head, just set it here.
 
-~NOTE:~ only normal is currently supported. Other orientations will be implemented at a future date
-
 Possible values are:
   (horizontal)
   - 'normal': buttons on the left, rotary encoders on the right
