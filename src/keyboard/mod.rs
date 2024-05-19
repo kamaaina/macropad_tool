@@ -132,6 +132,20 @@ pub trait Keyboard: Messages + Configuration {
 
         Ok(bytes_read)
     }
+
+    fn default_key_numbers(&self, rows: u8, cols: u8) -> Vec<Vec<u8>> {
+        let mut layout: Vec<Vec<u8>> = Vec::new();
+        let mut idx = 1u8;
+        for _i in 0..rows {
+            let mut tmp = Vec::new();
+            for _j in 0..cols {
+                tmp.push(idx);
+                idx += 1;
+            }
+            layout.push(tmp);
+        }
+        layout
+    }
 }
 
 #[derive(Debug, Default, ToPrimitive, Clone, Copy, Display, clap::ValueEnum)]

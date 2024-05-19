@@ -331,9 +331,7 @@ impl Mapping {
                         3 => {
                             found = Self::is_mouse_action(&da_key);
                         }
-                        _ => {
-                            panic!("unaccounted key test")
-                        }
+                        _ => (),
                     }
                     if found {
                         break;

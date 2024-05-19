@@ -1,5 +1,5 @@
 use crate::{
-    consts,
+    config, consts,
     keyboard::{
         Configuration, Keyboard, LedColor, MediaCode, Messages, Modifier, MouseAction, MouseButton,
         WellKnownCode,
@@ -53,10 +53,33 @@ impl Keyboard for Keyboard8890 {
     fn program(&mut self, macropad: &Macropad) -> Result<()> {
         debug!("programming keyboard");
         self.send(&self.begin_programming())?;
+
+        // normalize layout to "normal" orientation
+        let default_layout = if macropad.device.orientation == "clockwise"
+            || macropad.device.orientation == "counterclockwise"
+        {
+            // transpose
+            self.default_key_numbers(macropad.device.cols, macropad.device.rows)
+        } else {
+            self.default_key_numbers(macropad.device.rows, macropad.device.cols)
+        };
+        debug!("default_layout: {default_layout:?}");
+
+        let layout = match macropad.device.orientation.as_str() {
+            "clockwise" => config::get_keys_clockwise(default_layout),
+            "counterclockwise" => config::get_keys_counter_clockwise(default_layout),
+            "upsidedown" => config::get_keys_upsidedown(default_layout),
+            "normal" => default_layout,
+            _ => unreachable!("should not get here"),
+        };
+
+        debug!("layout: {layout:?}");
         for (i, layer) in macropad.layers.iter().enumerate() {
-            let mut key_num = 1;
-            for row in &layer.buttons {
-                for btn in row {
+            let mut key_num;
+            for (row_idx, row) in layer.buttons.iter().enumerate() {
+                for (col_idx, btn) in row.iter().enumerate() {
+                    debug!("get position in layout: row_idx: {row_idx} col_idx: {col_idx}");
+                    key_num = layout[row_idx][col_idx];
                     debug!(
                         "program layer: {} key: 0x{:02x} to: {btn:?}",
                         i + 1,
@@ -72,7 +95,6 @@ impl Keyboard for Keyboard8890 {
                     for msg in self.map_key(btn.mapping.to_string(), key_num)? {
                         self.send(&msg)?;
                     }
-                    key_num += 1;
                 }
             }
             key_num = 0x0du8;
