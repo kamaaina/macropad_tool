@@ -58,8 +58,10 @@ pub trait Keyboard: Messages + Configuration {
     ///
     /// #Arguments
     /// `macropad` - configuration to be programmed
+    /// `skip_check` - not all of the keyboards of the same product ID support the "read" capability
+    ///                so allow this to be skipped so programming can be completed
     ///
-    fn program(&mut self, macropad: &Macropad) -> Result<()>;
+    fn program(&mut self, macropad: &Macropad, skip_check: bool) -> Result<()>;
 
     /// Programs the LEDs on the macropad
     ///
