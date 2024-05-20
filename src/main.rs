@@ -123,10 +123,15 @@ fn main() -> Result<()> {
             }
         }
 
-        Command::Program { config_file } => {
+        Command::Program {
+            config_file,
+            skip_sanity_check,
+        } => {
             let config = Mapping::read(config_file);
             let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
-            keyboard.program(&config).context("programming macropad")?;
+            keyboard
+                .program(&config, *skip_sanity_check)
+                .context("programming macropad")?;
             println!("デバイスのプログラミングが完了しました");
         }
 

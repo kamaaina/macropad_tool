@@ -50,7 +50,7 @@ impl Messages for Keyboard8890 {
 }
 
 impl Keyboard for Keyboard8890 {
-    fn program(&mut self, macropad: &Macropad) -> Result<()> {
+    fn program(&mut self, macropad: &Macropad, _skip_check: bool) -> Result<()> {
         debug!("programming keyboard");
         self.send(&self.begin_programming())?;
 

@@ -97,6 +97,10 @@ pub enum Command {
         /// Configuration file in ron format
         #[clap(short, long, default_value = "./mapping.ron")]
         config_file: String,
+
+        /// Skip sanity check
+        #[clap(short, long, default_value_t = false)]
+        skip_sanity_check: bool,
     },
 
     /// Read configuration from device

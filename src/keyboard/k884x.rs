@@ -187,19 +187,28 @@ impl Messages for Keyboard884x {
 }
 
 impl Keyboard for Keyboard884x {
-    fn program(&mut self, macropad: &Macropad) -> Result<()> {
-        // ensure the config we have matches the connected device we want to program
-        let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
+    fn program(&mut self, macropad: &Macropad, skip_check: bool) -> Result<()> {
+        /*
+        the ones from amazon, while have the same product id, do not support reading
+        of configuration. allow the user to manually override this check so we can
+        still program the device
+        */
+        if !skip_check {
+            // ensure the config we have matches the connected device we want to program
+            let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
 
-        // get the type of device
-        self.send(&self.device_type())?;
-        self.recieve(&mut buf)?;
-        let device_info = Decoder::get_device_info(&buf);
-        ensure!(
+            // get the type of device
+            self.send(&self.device_type())?;
+            self.recieve(&mut buf)?;
+            let device_info = Decoder::get_device_info(&buf);
+            ensure!(
                 device_info.num_keys == (macropad.device.rows * macropad.device.cols)
                     && device_info.num_encoders == macropad.device.knobs,
-                "Configuration file and macropad mismatch.\nLooks like you are trying to program a different macropad.\nDid you select the right configuration file?\n"
+                "Configuration file and macropad mismatch.\nLooks like you are trying to program a different macropad.\nDid you select the right configuration file?\n\n\
+                If you think your mapping is correct, use the -s option to skip this check and program your device. Some of the 0x8840 products do not support\n\
+                reading and so you must use this option when programming."
             );
+        }
 
         // normalize layout to "normal" orientation
         let default_layout = if macropad.device.orientation == "clockwise"
