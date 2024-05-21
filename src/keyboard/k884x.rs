@@ -255,15 +255,15 @@ impl Keyboard for Keyboard884x {
             key_num = 0x10;
             for knob in &layer.knobs {
                 debug!(
-                    "layer: {} key: 0x{:02x} knob cw {}",
+                    "layer: {} key: 0x{:02x} knob ccw {}",
                     i + 1,
                     key_num,
-                    knob.cw.mapping
+                    knob.ccw.mapping
                 );
-                self.send(&self.build_key_msg(&knob.cw.mapping, lyr, key_num, 0)?)?;
-                if knob.cw.delay > 0 {
+                self.send(&self.build_key_msg(&knob.ccw.mapping, lyr, key_num, 0)?)?;
+                if knob.ccw.delay > 0 {
                     let mut msg =
-                        self.build_key_msg(&knob.cw.mapping, lyr, key_num, knob.cw.delay)?;
+                        self.build_key_msg(&knob.ccw.mapping, lyr, key_num, knob.ccw.delay)?;
                     msg[4] = 5;
                     self.send(&msg)?;
                 }
@@ -285,22 +285,22 @@ impl Keyboard for Keyboard884x {
                 key_num += 1;
 
                 debug!(
-                    "layer: {} key: 0x{:02x} knob ccw {}",
+                    "layer: {} key: 0x{:02x} knob cw {}",
                     i + 1,
                     key_num,
-                    knob.ccw.mapping
+                    knob.cw.mapping
                 );
-                self.send(&self.build_key_msg(&knob.ccw.mapping, lyr, key_num, 0)?)?;
-                if knob.ccw.delay > 0 {
+                self.send(&self.build_key_msg(&knob.cw.mapping, lyr, key_num, 0)?)?;
+                if knob.cw.delay > 0 {
                     let mut msg =
-                        self.build_key_msg(&knob.ccw.mapping, lyr, key_num, knob.ccw.delay)?;
+                        self.build_key_msg(&knob.cw.mapping, lyr, key_num, knob.cw.delay)?;
                     msg[4] = 5;
                     self.send(&msg)?;
                 }
                 key_num += 1;
             }
+            self.send(&self.end_program())?;
         }
-        self.send(&self.end_program())?;
         Ok(())
     }
 
