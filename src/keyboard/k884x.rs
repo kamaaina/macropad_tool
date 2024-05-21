@@ -367,7 +367,7 @@ impl Keyboard884x {
                 debug!("=> {key}");
                 if let Ok(m) = Modifier::from_str(key) {
                     let power = <Modifier as ToPrimitive>::to_u8(&m).unwrap();
-                    m_c = 2u32.pow(power as u32) as u8;
+                    m_c |= 2u32.pow(power as u32) as u8;
                 } else if let Ok(w) = WellKnownCode::from_str(key) {
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
                 } else if let Ok(a) = MediaCode::from_str(key) {
@@ -606,6 +606,57 @@ mod tests {
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x08, "checking byte 11");
         assert_eq!(msg[12], 0x28, "checking byte 12");
+        Ok(())
+    }
+
+    #[test]
+    fn ctrl_shift_v() -> anyhow::Result<()> {
+        // 03 fd 01 01 01 00 00 00      00 00 01 03 19 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let msg = kbd.build_key_msg("ctrl-shift-v", 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x01, "checking byte 4");
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x03, "checking byte 11");
+        assert_eq!(msg[12], 0x19, "checking byte 12");
+        Ok(())
+    }
+
+    #[test]
+    fn ctrl_alt_del() -> anyhow::Result<()> {
+        // 03 fd 01 01 01 00 00 00      00 00 01 05 4c 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let msg = kbd.build_key_msg("ctrl-alt-delete", 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x01, "checking byte 4");
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x05, "checking byte 11");
+        assert_eq!(msg[12], 0x4c, "checking byte 12");
+        Ok(())
+    }
+
+    #[test]
+    fn ctrl_alt_f3() -> anyhow::Result<()> {
+        // 03 fd 01 01 01 00 00 00      00 00 01 05 3c 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let msg = kbd.build_key_msg("ctrl-alt-f3", 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x01, "checking byte 4");
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x05, "checking byte 11");
+        assert_eq!(msg[12], 0x3c, "checking byte 12");
         Ok(())
     }
 }
