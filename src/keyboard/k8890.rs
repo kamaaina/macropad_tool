@@ -232,7 +232,7 @@ impl Keyboard8890 {
                         prepend.push(first_msg);
                         prepended = true;
                     }
-                    msg[5] = mapping.0;
+                    msg[5] |= mapping.0;
                     msg[6] = mapping.1;
                 }
             }
