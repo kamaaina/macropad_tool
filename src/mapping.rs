@@ -187,7 +187,7 @@ impl Mapping {
         let cfg = Self::read(cfg_file);
 
         // check orientation
-        Orientation::from_str(&Self::uppercase_first(&cfg.device.orientation))?;
+        Orientation::from_str(&cfg.device.orientation)?;
 
         if cfg.layers.is_empty() || cfg.layers.len() > 3 {
             return Err(anyhow!("number of layers must be > 0 and < 4"));
