@@ -1,7 +1,7 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use strum_macros::EnumString;
 
-#[derive(Debug, EnumString, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, EnumString, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[strum(ascii_case_insensitive)]
 pub enum Orientation {
     Normal,

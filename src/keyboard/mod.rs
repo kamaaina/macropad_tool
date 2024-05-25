@@ -1,7 +1,7 @@
 pub(crate) mod k884x;
 pub(crate) mod k8890;
 
-use crate::{consts, mapping::Macropad};
+use crate::{config, config::Orientation, consts, mapping::Macropad};
 
 use std::fmt::Display;
 
@@ -45,12 +45,61 @@ pub trait Messages {
 }
 
 pub trait Configuration {
-    /// Returns the  Macropad with its configuration settings for the specified layer
+    /// Returns the Macropad with its configuration settings for the specified layer
     ///
     /// #Arguments
     /// `layer` - layer to read configuration for
     ///
     fn read_macropad_config(&mut self, layer: &u8) -> Result<Macropad>;
+
+    /// Returns the layout button configuration for the specified orientation
+    ///
+    /// #Arguments
+    /// `orientation` - orientation of the macropad
+    /// `rows` - number of rows
+    /// `cols` - number of columns
+    ///
+    fn get_layout(&self, orientation: Orientation, rows: u8, cols: u8) -> Result<Vec<Vec<u8>>> {
+        // normalize layout to "normal" orientation
+        let default_layout = if orientation == Orientation::Clockwise
+            || orientation == Orientation::CounterClockwise
+        {
+            // transpose
+            self.default_key_numbers(cols, rows)
+        } else {
+            self.default_key_numbers(rows, cols)
+        };
+        debug!("default_layout: {default_layout:?}");
+
+        let layout = match orientation {
+            Orientation::Clockwise => config::get_keys_clockwise(default_layout),
+            Orientation::CounterClockwise => config::get_keys_counter_clockwise(default_layout),
+            Orientation::UpsideDown => config::get_keys_upsidedown(default_layout),
+            Orientation::Normal => default_layout,
+        };
+
+        Ok(layout)
+    }
+
+    /// Returns the default 'normal' orientation button numbers for programming
+    ///
+    /// #Arguments
+    /// `rows` - number of rows
+    /// `cols` - number of columns
+    ///
+    fn default_key_numbers(&self, rows: u8, cols: u8) -> Vec<Vec<u8>> {
+        let mut layout: Vec<Vec<u8>> = Vec::new();
+        let mut idx = 1u8;
+        for _i in 0..rows {
+            let mut tmp = Vec::new();
+            for _j in 0..cols {
+                tmp.push(idx);
+                idx += 1;
+            }
+            layout.push(tmp);
+        }
+        layout
+    }
 }
 
 pub trait Keyboard: Messages + Configuration {
@@ -133,20 +182,6 @@ pub trait Keyboard: Messages + Configuration {
         debug!("data: {:02x?}", buf);
 
         Ok(bytes_read)
-    }
-
-    fn default_key_numbers(&self, rows: u8, cols: u8) -> Vec<Vec<u8>> {
-        let mut layout: Vec<Vec<u8>> = Vec::new();
-        let mut idx = 1u8;
-        for _i in 0..rows {
-            let mut tmp = Vec::new();
-            for _j in 0..cols {
-                tmp.push(idx);
-                idx += 1;
-            }
-            layout.push(tmp);
-        }
-        layout
     }
 }
 

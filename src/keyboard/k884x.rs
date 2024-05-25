@@ -1,5 +1,5 @@
 use crate::{
-    config, consts,
+    consts,
     decoder::{Decoder, KeyMapping},
     keyboard::{
         Configuration, Keyboard, LedColor, MediaCode, Messages, Modifier, MouseAction, MouseButton,
@@ -210,26 +210,14 @@ impl Keyboard for Keyboard884x {
             );
         }
 
-        // normalize layout to "normal" orientation
-        let default_layout = if macropad.device.orientation == "clockwise"
-            || macropad.device.orientation == "counterclockwise"
-        {
-            // transpose
-            self.default_key_numbers(macropad.device.cols, macropad.device.rows)
-        } else {
-            self.default_key_numbers(macropad.device.rows, macropad.device.cols)
-        };
-        debug!("default_layout: {default_layout:?}");
-
-        let layout = match macropad.device.orientation.as_str() {
-            "clockwise" => config::get_keys_clockwise(default_layout),
-            "counterclockwise" => config::get_keys_counter_clockwise(default_layout),
-            "upsidedown" => config::get_keys_upsidedown(default_layout),
-            "normal" => default_layout,
-            _ => unreachable!("should not get here"),
-        };
-
+        // get our layout of buttons relative to programming orientation
+        let layout = self.get_layout(
+            macropad.device.orientation,
+            macropad.device.rows,
+            macropad.device.cols,
+        )?;
         debug!("layout: {layout:?}");
+
         for (i, layer) in macropad.layers.iter().enumerate() {
             let lyr = (i + 1) as u8;
             let mut key_num;

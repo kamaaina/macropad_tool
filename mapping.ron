@@ -1,7 +1,7 @@
 (
     device: (
-        // normal, clockwise, counterclockwise, upsidedown
-        orientation: "normal",
+        // Normal, Clockwise, CounterClockwise, UpsideDown
+        orientation: Normal,
         rows: 2,
         cols: 3,
         knobs: 1,

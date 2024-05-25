@@ -22,7 +22,7 @@ impl Macropad {
     pub fn new(rows: u8, cols: u8, knobs: u8) -> Self {
         Self {
             device: Device {
-                orientation: "normal".to_string(),
+                orientation: Orientation::Normal,
                 rows,
                 cols,
                 knobs,
@@ -40,7 +40,7 @@ impl Macropad {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Device {
     /// Orientation of device
-    pub orientation: String,
+    pub orientation: Orientation,
     /// Number of rows
     pub rows: u8,
     /// Number of columns
@@ -185,9 +185,6 @@ impl Mapping {
 
         // check layers
         let cfg = Self::read(cfg_file);
-
-        // check orientation
-        Orientation::from_str(&cfg.device.orientation)?;
 
         if cfg.layers.is_empty() || cfg.layers.len() > 3 {
             return Err(anyhow!("number of layers must be > 0 and < 4"));
