@@ -81,7 +81,12 @@ fn main() -> Result<()> {
 
                         // get the type of device
                         keyboard.send(&keyboard.device_type())?;
-                        keyboard.recieve(&mut buf)?;
+                        let bytes_read = keyboard.recieve(&mut buf)?;
+                        if bytes_read == 0 {
+                            return Err(anyhow!(
+                                "Unable to read from device to validate mappings. Please use -p option instead to specify your device."
+                            ));
+                        }
                         let device_info = Decoder::get_device_info(&buf);
                         debug!(
                             "keys: {} encoders: {}",
@@ -123,15 +128,10 @@ fn main() -> Result<()> {
             }
         }
 
-        Command::Program {
-            config_file,
-            skip_sanity_check,
-        } => {
+        Command::Program { config_file } => {
             let config = Mapping::read(config_file);
             let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
-            keyboard
-                .program(&config, *skip_sanity_check)
-                .context("programming macropad")?;
+            keyboard.program(&config).context("programming macropad")?;
             println!("デバイスのプログラミングが完了しました");
         }
 

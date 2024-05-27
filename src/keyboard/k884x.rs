@@ -187,18 +187,15 @@ impl Messages for Keyboard884x {
 }
 
 impl Keyboard for Keyboard884x {
-    fn program(&mut self, macropad: &Macropad, skip_check: bool) -> Result<()> {
-        /*
-        the ones from amazon, while have the same product id, do not support reading
-        of configuration. allow the user to manually override this check so we can
-        still program the device
-        */
-        if !skip_check {
-            // ensure the config we have matches the connected device we want to program
-            let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
+    fn program(&mut self, macropad: &Macropad) -> Result<()> {
+        // ensure the config we have matches the connected device we want to program
+        let mut buf = vec![0; consts::READ_BUF_SIZE.into()];
 
-            // get the type of device
-            self.send(&self.device_type())?;
+        // get the type of device
+        self.send(&self.device_type())?;
+        let bytes_read = self.recieve(&mut buf)?;
+
+        if bytes_read > 0 {
             self.recieve(&mut buf)?;
             let device_info = Decoder::get_device_info(&buf);
             ensure!(
@@ -208,6 +205,10 @@ impl Keyboard for Keyboard884x {
                 If you think your mapping is correct, use the -s option to skip this check and program your device. Some of the 0x8840 products do not support\n\
                 reading and so you must use this option when programming."
             );
+        } else {
+            // we probably have the type from amazon, while have the same product id, does not
+            // support reading. do not error out, but skip the check and continue to program
+            println!("Unable perform sanity check - device does not support reading of configuration. Programming macropad.");
         }
 
         // get our layout of buttons relative to programming orientation
