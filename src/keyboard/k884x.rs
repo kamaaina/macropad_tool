@@ -368,7 +368,6 @@ impl Keyboard884x {
                         2u32.pow(<MouseButton as ToPrimitive>::to_u8(&a).unwrap().into()) as u8;
                     msg[4] = 0x03;
                 } else if let Ok(a) = MouseAction::from_str(key) {
-                    m_c = 0x01;
                     match a {
                         MouseAction::WheelUp => mouse_action = 0x01,
                         MouseAction::WheelDown => mouse_action = 0xff,
@@ -492,6 +491,23 @@ mod tests {
         }
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x01, "checking byte 11");
+        assert_eq!(msg[15], 0x01, "checking byte 15");
+        Ok(())
+    }
+
+    #[test]
+    fn mouse_wheelup() -> anyhow::Result<()> {
+        // 03 fd 01 02 03 00 00 00     00 00 01 00 00 00 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let msg = kbd.build_key_msg("wheelup", 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg[4], 0x03, "checking byte 4");
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x00, "checking byte 11");
         assert_eq!(msg[15], 0x01, "checking byte 15");
         Ok(())
     }
