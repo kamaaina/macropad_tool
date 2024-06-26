@@ -127,6 +127,10 @@ pub struct LedCommand {
     #[clap(verbatim_doc_comment)]
     pub index: u8,
 
+    // Layer to set the LED
+    #[clap(default_value_t = 1)]
+    pub layer: u8,
+
     // made this an option because the 884x supports color but the 8890
     // does not. defaults to Red, but since the 8890 does not accept
     // setting color, it just gets ignored

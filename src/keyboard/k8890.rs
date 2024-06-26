@@ -33,7 +33,7 @@ impl Messages for Keyboard8890 {
         unimplemented!("reading device type is not supported");
     }
 
-    fn program_led(&self, mode: u8, _color: LedColor) -> Vec<u8> {
+    fn program_led(&self, mode: u8, _layer: u8, _color: LedColor) -> Vec<u8> {
         let mut msg = vec![0x03, 0xb0, 0x18, mode];
         let size = consts::PACKET_SIZE - msg.len();
         msg.extend_from_slice(&vec![0; size]);
@@ -51,8 +51,12 @@ impl Messages for Keyboard8890 {
 
 impl Keyboard for Keyboard8890 {
     fn program(&mut self, macropad: &Macropad) -> Result<()> {
-        debug!("programming keyboard");
-        self.send(&self.begin_programming())?;
+        debug!("programming keyboard - NOTE: hardcoding to layer 1");
+
+        // FIXME: currently hardcoding the layer to 1 as the only 8890 device
+        //        i have seen only has support for one layer. if we know of
+        //        one that has multiple layers, we should refactor this then
+        self.send(&self.begin_programming(1))?;
 
         // get our layout of buttons relative to programming orientation
         let layout = self.get_layout(
@@ -118,13 +122,13 @@ impl Keyboard for Keyboard8890 {
         Ok(())
     }
 
-    fn set_led(&mut self, mode: u8, _color: LedColor) -> Result<()> {
+    fn set_led(&mut self, mode: u8, layer: u8, _color: LedColor) -> Result<()> {
         if mode > 2 {
             return Err(anyhow!("macropad supports modes 0, 1, and 2 only"));
         }
         self.led_programmed = true;
-        self.send(&self.begin_programming())?;
-        self.send(&self.program_led(mode, LedColor::Red))?;
+        self.send(&self.begin_programming(layer))?;
+        self.send(&self.program_led(mode, layer, LedColor::Red))?;
         self.send(&self.end_program())?;
         Ok(())
     }
@@ -153,8 +157,8 @@ impl Keyboard8890 {
         Ok(keyboard)
     }
 
-    pub fn begin_programming(&self) -> Vec<u8> {
-        let mut msg = vec![0x03, 0xa1, 0x01];
+    pub fn begin_programming(&self, layer: u8) -> Vec<u8> {
+        let mut msg = vec![0x03, 0xa1, layer];
         let size = consts::PACKET_SIZE - msg.len();
         msg.extend_from_slice(&vec![0; size]);
         msg
@@ -340,7 +344,7 @@ mod tests {
     fn led_mode2() -> anyhow::Result<()> {
         let mut kbd = Keyboard8890::new(None, 0)?;
         kbd.led_programmed = true;
-        let msg = kbd.program_led(2, LedColor::Red);
+        let msg = kbd.program_led(2, 1, LedColor::Red);
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[1], 0xb0, "checking first byte of led programming");

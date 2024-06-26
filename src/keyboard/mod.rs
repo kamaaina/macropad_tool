@@ -33,9 +33,10 @@ pub trait Messages {
     ///
     /// #Arguments
     /// `mode` - preset mode of the LED
+    /// `layer` - layer to program
     /// `color` - the color to use for the mode
     ///
-    fn program_led(&self, mode: u8, color: LedColor) -> Vec<u8>;
+    fn program_led(&self, mode: u8, layer: u8, color: LedColor) -> Vec<u8>;
 
     /// Returns the "end of programming" message for the device. This message
     /// effectively tell the device to 'save its configuration' so when it is
@@ -114,9 +115,10 @@ pub trait Keyboard: Messages + Configuration {
     ///
     /// #Arguments
     /// `mode` - preset mode of the LED
+    /// `layer` - layer to program
     /// `color` - the color to use for the mode
     ///
-    fn set_led(&mut self, mode: u8, color: LedColor) -> Result<()>;
+    fn set_led(&mut self, mode: u8, layer: u8, color: LedColor) -> Result<()>;
 
     /// Returns the handle of the device
     ///
