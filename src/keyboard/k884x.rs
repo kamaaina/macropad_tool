@@ -168,11 +168,11 @@ impl Messages for Keyboard884x {
         ]
     }
 
-    fn program_led(&self, mode: u8, color: LedColor) -> Vec<u8> {
+    fn program_led(&self, mode: u8, layer: u8, color: LedColor) -> Vec<u8> {
         let mut m_c = <LedColor as ToPrimitive>::to_u8(&color).unwrap();
         m_c |= mode;
-        debug!("mode and code:0x{:02}", m_c);
-        let mut msg = vec![0x03, 0xfe, 0xb0, 0x01, 0x08];
+        debug!("mode and code: 0x{:02} layer: {layer}", m_c);
+        let mut msg = vec![0x03, 0xfe, 0xb0, layer, 0x08];
         msg.extend_from_slice(&[0; 5]);
         msg.extend_from_slice(&[0x01, 0x00, m_c]);
         msg.extend_from_slice(&[0; 52]);
@@ -293,8 +293,8 @@ impl Keyboard for Keyboard884x {
         Ok(())
     }
 
-    fn set_led(&mut self, mode: u8, color: LedColor) -> Result<()> {
-        self.send(&self.program_led(mode, color))?;
+    fn set_led(&mut self, mode: u8, layer: u8, color: LedColor) -> Result<()> {
+        self.send(&self.program_led(mode, layer, color))?;
         self.send(&self.end_program())?;
         Ok(())
     }
@@ -432,7 +432,7 @@ impl Keyboard884x {
 
 #[cfg(test)]
 mod tests {
-    use crate::keyboard::k884x::Keyboard884x;
+    use crate::{consts, keyboard::k884x::Keyboard884x, keyboard::Messages, LedColor};
 
     #[test]
     fn ctrl_a_ctrl_s() -> anyhow::Result<()> {
@@ -441,7 +441,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("ctrl-a,ctrl-s", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[10], 0x02, "checking number of keys to program");
         assert_eq!(msg[11], 0x01, "checking for ctrl modifier");
         assert_eq!(msg[12], 0x04, "checking for 'a' key");
@@ -455,7 +455,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("a", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[10], 0x01, "checking number of keys to program");
         assert_eq!(msg[11], 0x00, "checking for modifier");
         assert_eq!(msg[12], 0x04, "checking for 'a' key");
@@ -468,7 +468,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("volumedown", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x02, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -484,7 +484,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("ctrl-wheelup", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -501,7 +501,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("wheelup", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -518,7 +518,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("ctrl-wheeldown", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -535,7 +535,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("click", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -552,7 +552,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("mclick", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -569,7 +569,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("rclick", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x03, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -586,7 +586,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("shift-p", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x01, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -603,7 +603,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("win-enter", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x01, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -620,7 +620,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("ctrl-shift-v", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x01, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -637,7 +637,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("ctrl-alt-delete", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x01, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -654,7 +654,7 @@ mod tests {
         let kbd = Keyboard884x::new(None, 0, 0)?;
         let msg = kbd.build_key_msg("ctrl-alt-f3", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
-        assert_eq!(msg.len(), 65, "checking msg size");
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x01, "checking byte 4");
         for i in msg.iter().take(10).skip(5) {
             assert_eq!(*i, 0x00);
@@ -662,6 +662,25 @@ mod tests {
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x05, "checking byte 11");
         assert_eq!(msg[12], 0x3c, "checking byte 12");
+        Ok(())
+    }
+
+    #[test]
+    fn led_mode3_blue_layer_3() -> anyhow::Result<()> {
+        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let msg = kbd.program_led(3, 3, LedColor::Blue);
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(msg[0], 0x03, "checking first byte of led programming");
+        assert_eq!(msg[1], 0xfe, "checking second byte of led programming");
+        assert_eq!(msg[2], 0xb0, "checking third byte of led programming");
+        assert_eq!(msg[3], 0x03, "checking layer led");
+        assert_eq!(msg[4], 0x08, "checking fifth byte of led programming");
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking eleventh byte of programming led");
+        assert_eq!(msg[12], 0x63, "checking mode and color of programming led");
         Ok(())
     }
 }

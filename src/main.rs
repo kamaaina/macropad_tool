@@ -135,7 +135,11 @@ fn main() -> Result<()> {
             println!("デバイスのプログラミングが完了しました");
         }
 
-        Command::Led(LedCommand { index, led_color }) => {
+        Command::Led(LedCommand {
+            index,
+            layer,
+            led_color,
+        }) => {
             let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
 
             // color is not supported on 0x8890 so don't require one to be passed
@@ -145,7 +149,7 @@ fn main() -> Result<()> {
                 LedColor::Red
             };
             keyboard
-                .set_led(*index, color)
+                .set_led(*index, *layer, color)
                 .context("programming LED on macropad")?;
         }
 
