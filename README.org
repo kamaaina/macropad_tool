@@ -32,6 +32,7 @@ This is an utility for programming small keyboards like this one:
 [[images/keyboard-3-1.jpg]]
 [[images/keyboard-4-0.png]]
 [[images/keyboard-6-1_2.png]]
+[[images/keyboard-15-3.jpg]]
 
 Many of these keyboards are popular on AliExpress and Amazon, but the seller usually makes you
 download a windows exe file from a google drive account to program it. It also assumes
@@ -80,6 +81,15 @@ with rotary encoders on the right side.
 #+begin_src ron
         rows: 3,
         cols: 4,
+        knobs: 2,
+    ),
+#+end_src
+
+15 Button + 3 Knobs
+
+#+begin_src ron
+        rows: 3,
+        cols: 5,
         knobs: 2,
     ),
 #+end_src
@@ -211,8 +221,10 @@ macropad-tool program -c <ron_file>  # to specify a different configuration file
 Some keyboards support LEDs and you can program the different modes via the led command
 
 #+begin_example
-macropad-tool led <mode> <color>
+macropad-tool led <mode> <layer> <color> # Only for 8840 model
+macropad-tool led 1 1 red 
 macropad-tool led -h  # the help menu about different modes/colors
+
 #+end_example
 
 * Windows
