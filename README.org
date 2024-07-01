@@ -224,7 +224,6 @@ Some keyboards support LEDs and you can program the different modes via the led 
 macropad-tool led <mode> <layer> <color> # Only for 8840 model
 macropad-tool led 1 1 red 
 macropad-tool led -h  # the help menu about different modes/colors
-
 #+end_example
 
 * Windows
