@@ -132,7 +132,7 @@ fn main() -> Result<()> {
             let config = Mapping::read(config_file);
             let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
             keyboard.program(&config).context("programming macropad")?;
-            println!("デバイスのプログラミングが完了しました");
+            println!("successfully programmed device");
         }
 
         Command::Led(LedCommand {
