@@ -285,8 +285,13 @@ fn open_keyboard(options: &Options) -> Result<Box<dyn Keyboard>> {
         .context("claim interface")?;
 
     match id_product {
-        0x8840 | 0x8842 => k884x::Keyboard884x::new(Some(handle), endpt_addr_out, endpt_addr_in)
-            .map(|v| Box::new(v) as Box<dyn Keyboard>),
+        0x8840 | 0x8842 => k884x::Keyboard884x::new(
+            Some(handle),
+            endpt_addr_out,
+            endpt_addr_in,
+            options.devel_options.product_id.unwrap(),
+        )
+        .map(|v| Box::new(v) as Box<dyn Keyboard>),
         0x8890 => k8890::Keyboard8890::new(Some(handle), endpt_addr_out)
             .map(|v| Box::new(v) as Box<dyn Keyboard>),
         _ => unreachable!("This shouldn't happen!"),
