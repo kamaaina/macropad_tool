@@ -21,6 +21,8 @@ pub struct Keyboard884x {
     out_endpoint: u8,
     /// address of in endpoint
     in_endpoint: u8,
+    /// product id
+    pid: u16,
 }
 
 impl Configuration for Keyboard884x {
@@ -149,23 +151,43 @@ impl Configuration for Keyboard884x {
 
 impl Messages for Keyboard884x {
     fn read_config(&self, keys: u8, encoders: u8, layer: u8) -> Vec<u8> {
-        vec![
-            0x03, 0xfa, keys, encoders, layer, 0x02, 0xe0, 0xcb, 0x80, 0x00, 0xa0, 0xcc, 0x80,
-            0x00, 0x7c, 0xf2, 0x02, 0x69, 0x00, 0x00, 0x00, 0x00, 0x4d, 0x00, 0x2c, 0x02, 0xa0,
-            0xcc, 0x80, 0x00, 0xe8, 0x00, 0x00, 0x00, 0xb9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x90, 0xcc, 0x80, 0x00, 0x20, 0xcd, 0x80, 0x00, 0xc0, 0x84, 0x26, 0x02, 0xa0,
-            0x62, 0x2f, 0x02, 0xc0, 0xcc, 0x80, 0x00, 0xc7, 0xb6, 0xc2,
-        ]
+        if self.pid == 0x8840 {
+            vec![
+                0x03, 0xfa, keys, encoders, layer, 0x06, 0x00, 0xcc, 0x80, 0x00, 0xc0, 0xcc, 0x80,
+                0x00, 0x7c, 0xf2, 0x02, 0x69, 0x00, 0x00, 0x00, 0x00, 0x4d, 0x00, 0x14, 0x06, 0xc0,
+                0xcc, 0x80, 0x00, 0x49, 0x01, 0x00, 0x00, 0x06, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0xb0, 0xcc, 0x80, 0x00, 0x40, 0xcd, 0x80, 0x00, 0x88, 0x05, 0x00, 0x06, 0xc0,
+                0x0a, 0x10, 0x06, 0xe0, 0xcc, 0x80, 0x00, 0xc7, 0xb6, 0x48,
+            ]
+        } else {
+            vec![
+                0x03, 0xfa, keys, encoders, layer, 0x02, 0xe0, 0xcb, 0x80, 0x00, 0xa0, 0xcc, 0x80,
+                0x00, 0x7c, 0xf2, 0x02, 0x69, 0x00, 0x00, 0x00, 0x00, 0x4d, 0x00, 0x2c, 0x02, 0xa0,
+                0xcc, 0x80, 0x00, 0xe8, 0x00, 0x00, 0x00, 0xb9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x90, 0xcc, 0x80, 0x00, 0x20, 0xcd, 0x80, 0x00, 0xc0, 0x84, 0x26, 0x02, 0xa0,
+                0x62, 0x2f, 0x02, 0xc0, 0xcc, 0x80, 0x00, 0xc7, 0xb6, 0xc2,
+            ]
+        }
     }
 
     fn device_type(&self) -> Vec<u8> {
-        vec![
-            0x03, 0xfb, 0xfb, 0xfb, 0x1f, 0x02, 0x3c, 0xd0, 0x80, 0x00, 0xec, 0xcf, 0x80, 0x00,
-            0xcc, 0xd2, 0x9b, 0x00, 0xf0, 0xcf, 0x80, 0x00, 0x3c, 0xd0, 0x80, 0x00, 0x56, 0x83,
-            0xd2, 0x7b, 0xd0, 0x0d, 0x48, 0x00, 0x0c, 0xd0, 0x80, 0x00, 0xa8, 0x3d, 0x34, 0x02,
-            0x48, 0xd0, 0x80, 0x00, 0x70, 0xf5, 0x1e, 0x62, 0x98, 0xda, 0x11, 0x62, 0x0c, 0x80,
-            0x00, 0x00, 0x00, 0x82, 0x26, 0x02, 0xff, 0xff, 0xff,
-        ]
+        if self.pid == 0x8840 {
+            vec![
+                0x03, 0xfb, 0xfb, 0xfb, 0x02, 0x06, 0x2c, 0xd0, 0x80, 0x00, 0xdc, 0xcf, 0x80, 0x00,
+                0xcc, 0xd2, 0x21, 0x01, 0xe0, 0xcf, 0x80, 0x00, 0x2c, 0xd0, 0x80, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0xd0, 0x0d, 0x48, 0x00, 0xfc, 0xcf, 0x80, 0x00, 0xc0, 0x61, 0xbc, 0x06,
+                0x38, 0xd0, 0x80, 0x00, 0x70, 0xf5, 0x1e, 0x62, 0x98, 0xda, 0x11, 0x62, 0x0c, 0x80,
+                0x00, 0x00, 0x48, 0x09, 0x00, 0x06, 0xff, 0xff, 0xff,
+            ]
+        } else {
+            vec![
+                0x03, 0xfb, 0xfb, 0xfb, 0x1f, 0x02, 0x3c, 0xd0, 0x80, 0x00, 0xec, 0xcf, 0x80, 0x00,
+                0xcc, 0xd2, 0x9b, 0x00, 0xf0, 0xcf, 0x80, 0x00, 0x3c, 0xd0, 0x80, 0x00, 0x56, 0x83,
+                0xd2, 0x7b, 0xd0, 0x0d, 0x48, 0x00, 0x0c, 0xd0, 0x80, 0x00, 0xa8, 0x3d, 0x34, 0x02,
+                0x48, 0xd0, 0x80, 0x00, 0x70, 0xf5, 0x1e, 0x62, 0x98, 0xda, 0x11, 0x62, 0x0c, 0x80,
+                0x00, 0x00, 0x00, 0x82, 0x26, 0x02, 0xff, 0xff, 0xff,
+            ]
+        }
     }
 
     fn program_led(&self, mode: u8, layer: u8, color: LedColor) -> Vec<u8> {
@@ -317,11 +339,13 @@ impl Keyboard884x {
         handle: Option<DeviceHandle<Context>>,
         out_endpoint: u8,
         in_endpoint: u8,
+        pid: u16,
     ) -> Result<Self> {
         let keyboard = Self {
             handle,
             out_endpoint,
             in_endpoint,
+            pid,
         };
 
         Ok(keyboard)
@@ -425,6 +449,7 @@ impl Keyboard884x {
             6 => Ok((2, 3)),
             9 => Ok((3, 3)),
             12 => Ok((3, 4)),
+            15 => Ok((3, 5)),
             _ => Err(anyhow!("unable to guess rows/cols for {num_keys}")),
         }
     }
@@ -438,7 +463,7 @@ mod tests {
     fn ctrl_a_ctrl_s() -> anyhow::Result<()> {
         // ctrl-a,ctrl-s
         // 03 fd 01 01 01 00 00 00     00 00 02 01 04 01 16 00   00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("ctrl-a,ctrl-s", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -452,7 +477,7 @@ mod tests {
 
     #[test]
     fn well_known_key() -> anyhow::Result<()> {
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("a", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -465,7 +490,7 @@ mod tests {
     #[test]
     fn volume_down() -> anyhow::Result<()> {
         // 03 fd 10 01 02 00 00 00     00 00 02 ea 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("volumedown", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -481,7 +506,7 @@ mod tests {
     #[test]
     fn mouse_ctrl_plus() -> anyhow::Result<()> {
         // 03 fd 01 02 03 00 00 00     00 00 01 01 00 00 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("ctrl-wheelup", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -498,7 +523,7 @@ mod tests {
     #[test]
     fn mouse_wheelup() -> anyhow::Result<()> {
         // 03 fd 01 02 03 00 00 00     00 00 01 00 00 00 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("wheelup", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -515,7 +540,7 @@ mod tests {
     #[test]
     fn mouse_ctrl_minus() -> anyhow::Result<()> {
         // 03 fd 02 02 03 00 00 00     00 00 01 01 00 00 00 ff 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("ctrl-wheeldown", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -532,7 +557,7 @@ mod tests {
     #[test]
     fn mouse_left_click() -> anyhow::Result<()> {
         // 03 fd 01 02 03 00 00 00     00 00 01 00 01 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("click", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -549,7 +574,7 @@ mod tests {
     #[test]
     fn mouse_middle_click() -> anyhow::Result<()> {
         // 03 fd 02 02 03 00 00 00     00 00 01 00 04 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("mclick", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -566,7 +591,7 @@ mod tests {
     #[test]
     fn mouse_right_click() -> anyhow::Result<()> {
         // 03 fd 03 02 03 00 00 00     00 00 01 00 02 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("rclick", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -583,7 +608,7 @@ mod tests {
     #[test]
     fn shift_p() -> anyhow::Result<()> {
         // 03 fd 06 01 01 00 00 00      00 00 01 02 13 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("shift-p", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -600,7 +625,7 @@ mod tests {
     #[test]
     fn win_enter() -> anyhow::Result<()> {
         // 03 fd 11 03 01 00 00 00      00 00 01 08 28 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("win-enter", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -617,7 +642,7 @@ mod tests {
     #[test]
     fn ctrl_shift_v() -> anyhow::Result<()> {
         // 03 fd 01 01 01 00 00 00      00 00 01 03 19 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("ctrl-shift-v", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -634,7 +659,7 @@ mod tests {
     #[test]
     fn ctrl_alt_del() -> anyhow::Result<()> {
         // 03 fd 01 01 01 00 00 00      00 00 01 05 4c 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("ctrl-alt-delete", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -651,7 +676,7 @@ mod tests {
     #[test]
     fn ctrl_alt_f3() -> anyhow::Result<()> {
         // 03 fd 01 01 01 00 00 00      00 00 01 05 3c 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.build_key_msg("ctrl-alt-f3", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
@@ -667,7 +692,7 @@ mod tests {
 
     #[test]
     fn led_mode3_blue_layer_3() -> anyhow::Result<()> {
-        let kbd = Keyboard884x::new(None, 0, 0)?;
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
         let msg = kbd.program_led(3, 3, LedColor::Blue);
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
