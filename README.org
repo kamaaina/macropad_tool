@@ -85,15 +85,6 @@ with rotary encoders on the right side.
     ),
 #+end_src
 
-15 Button + 3 Knobs
-
-#+begin_src ron
-        rows: 3,
-        cols: 5,
-        knobs: 2,
-    ),
-#+end_src
-
 ** Layers
 
 The current layer is changed using a button on the side of the macropad
