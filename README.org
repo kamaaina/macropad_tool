@@ -29,8 +29,8 @@ causes problems with your device.
 ** DONATIONS WELCOME
 [[https://www.buymeacoffee.com/kamaaina][https://cdn.buymeacoffee.com/buttons/default-orange.png]]
 
-~Obviously I do not have all types of macropad nor do I intend to purchase them. However, if people want to donate macropads so
-support can be added for more devices, that is a big way to help grow this project.~
+Obviously I do not have all types of macropad nor do I intend to purchase them. However, if people want to donate macropads so
+support can be added for more devices, that is a big way to help grow this project.
 
 This is an utility for programming small keyboards like this one:
 
