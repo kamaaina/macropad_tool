@@ -27,9 +27,7 @@ as my free time permits. Please use caution before using this software as I assu
 causes problems with your device.
 
 ** DONATIONS WELCOME
-#+BEGIN_EXPORT html
 <a href="https://www.buymeacoffee.com/kamaaina" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
-#+END_EXPORT
 ￼
 
 ~Obviously I do not have all types of macropad nor do I intend to purchase them. However, if people want to donate macropads so
