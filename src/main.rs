@@ -121,7 +121,7 @@ fn main() -> Result<()> {
                 println!("config is valid 👌")
             } else {
                 // load and validate mapping
-                debug!("validating general ron formatting - unable to do more granular checking");
+                println!("validating general ron formatting - unable to do more granular checking; use -p option to check against device");
                 Mapping::validate(config_file, None)
                     .context("generic validation of configuration file")?;
                 println!("config is valid 👌")
