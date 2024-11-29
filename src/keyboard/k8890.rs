@@ -170,7 +170,7 @@ impl Keyboard8890 {
         let kc: Vec<_> = key_chord.split(',').collect();
         let mut prepended = false;
         for (i, key) in kc.iter().enumerate() {
-            let mut msg = vec![0x03, key_pos, 0x00, 0x00];
+            let mut msg = vec![0x03, key_pos, 0x00, 0x00, 0x00, 0x00, 0x00];
             let mut remaining = consts::PACKET_SIZE - msg.len();
             let km: Vec<_> = key.split('-').collect();
             let mut mouse_action = 0u8;
