@@ -372,6 +372,7 @@ impl Keyboard884x {
         let mut cnt = 0;
         let mut mouse_action = 0u8;
         let mut mouse_click = 0u8;
+        let mut media_key = false;
         for binding in &keys {
             let kc: Vec<_> = binding.split('-').collect();
             let mut m_c = 0x00u8;
@@ -384,9 +385,14 @@ impl Keyboard884x {
                 } else if let Ok(w) = WellKnownCode::from_str(key) {
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
                 } else if let Ok(a) = MediaCode::from_str(key) {
-                    m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
+                    let value = <MediaCode as ToPrimitive>::to_u16(&a).unwrap();
+                    m_c = (value & 0xFF) as u8;
                     msg[4] = 0x02;
-                    msg[10] = 0x02;
+                    msg[10] = ((value & 0xFF00) >> 8) as u8;
+                    if msg[10] == 0 {
+                        msg[10] = 0x02;
+                    }
+                    media_key = true;
                 } else if let Ok(a) = MouseButton::from_str(key) {
                     mouse_click =
                         2u32.pow(<MouseButton as ToPrimitive>::to_u8(&a).unwrap().into()) as u8;
@@ -406,6 +412,10 @@ impl Keyboard884x {
 
         for _i in 0..=(consts::MAX_KEY_PRESSES_884X - cnt) {
             msg.extend_from_slice(&[0x00; 2]);
+        }
+
+        if media_key {
+            msg[12] = 0x01;
         }
 
         if mouse_click > 0 {
@@ -706,6 +716,22 @@ mod tests {
         }
         assert_eq!(msg[10], 0x01, "checking eleventh byte of programming led");
         assert_eq!(msg[12], 0x63, "checking mode and color of programming led");
+        Ok(())
+    }
+
+    #[test]
+    fn calculator() -> anyhow::Result<()> {
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
+        let msg = kbd.build_key_msg("calculator", 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(msg[4], 0x02, "checking byte 4");
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
+        }
+        assert_eq!(msg[10], 0x01, "checking byte 10");
+        assert_eq!(msg[11], 0x92, "checking byte 11");
+        assert_eq!(msg[12], 0x01, "checking byte 12");
         Ok(())
     }
 }
