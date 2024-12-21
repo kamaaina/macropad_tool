@@ -373,6 +373,7 @@ impl Keyboard884x {
         let mut mouse_action = 0u8;
         let mut mouse_click = 0u8;
         let mut media_key = false;
+        let mut media_val = 0u8;
         for binding in &keys {
             let kc: Vec<_> = binding.split('-').collect();
             let mut m_c = 0x00u8;
@@ -389,6 +390,7 @@ impl Keyboard884x {
                     m_c = (value & 0xFF) as u8;
                     msg[4] = 0x02;
                     msg[10] = ((value & 0xFF00) >> 8) as u8;
+                    media_val = msg[10];
                     if msg[10] == 0 {
                         msg[10] = 0x02;
                     }
@@ -415,7 +417,7 @@ impl Keyboard884x {
         }
 
         if media_key {
-            msg[12] = 0x01;
+            msg[12] = media_val;
         }
 
         if mouse_click > 0 {
@@ -510,6 +512,7 @@ mod tests {
         }
         assert_eq!(msg[10], 0x02, "checking byte 10");
         assert_eq!(msg[11], 0xea, "checking byte 11");
+        assert_eq!(msg[12], 0x00, "checking byte 12");
         Ok(())
     }
 
@@ -732,6 +735,22 @@ mod tests {
         assert_eq!(msg[10], 0x01, "checking byte 10");
         assert_eq!(msg[11], 0x92, "checking byte 11");
         assert_eq!(msg[12], 0x01, "checking byte 12");
+        Ok(())
+    }
+
+    #[test]
+    fn back() -> anyhow::Result<()> {
+        let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
+        let msg = kbd.build_key_msg("back", 1u8, 1u8, 0)?;
+        println!("{:02x?}", msg);
+        assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(msg[4], 0x02, "checking byte 4");
+        for i in msg.iter().take(10).skip(5) {
+            assert_eq!(*i, 0x00);
+        }
+        assert_eq!(msg[10], 0x02, "checking byte 10");
+        assert_eq!(msg[11], 0x24, "checking byte 11");
+        assert_eq!(msg[12], 0x02, "checking byte 12");
         Ok(())
     }
 }
