@@ -175,7 +175,9 @@ impl Keyboard8890 {
             let km: Vec<_> = key.split('-').collect();
             let mut mouse_action = 0u8;
             let mut mouse_click;
-            let mut m_c;
+            let mut media_key = false;
+            let mut media_val = 0u8;
+            //let mut m_c;
             let mut wkk;
             for mod_key in km {
                 debug!("=====> {mod_key}");
@@ -194,9 +196,11 @@ impl Keyboard8890 {
                     wkk = <WellKnownCode as ToPrimitive>::to_u8(&w).unwrap();
                     msg[6] = wkk;
                 } else if let Ok(a) = MediaCode::from_str(mod_key) {
-                    m_c = <MediaCode as ToPrimitive>::to_u8(&a).unwrap();
+                    let value = <MediaCode as ToPrimitive>::to_u16(&a).unwrap();
                     msg[2] = 0x12;
-                    msg[3] = m_c;
+                    msg[3] = (value & 0xFF) as u8;
+                    media_val = ((value & 0xFF00) >> 8) as u8;
+                    media_key = true;
                 } else if let Ok(a) = MouseButton::from_str(mod_key) {
                     mouse_click =
                         2u32.pow(<MouseButton as ToPrimitive>::to_u8(&a).unwrap().into()) as u8;
@@ -231,6 +235,9 @@ impl Keyboard8890 {
             msg.extend_from_slice(&vec![0; remaining]);
             for i in &prepend {
                 retval.push(i.clone());
+            }
+            if media_key {
+                msg[4] = media_val;
             }
             prepend.clear();
             retval.push(msg);
@@ -367,6 +374,45 @@ mod tests {
         assert_eq!(msg[0], 0x03, "checking first byte of end programming");
         assert_eq!(msg[1], 0xaa, "checking second byte of end programming");
         assert_eq!(msg[2], 0xaa, "checking third byte of end programming");
+        Ok(())
+    }
+
+    #[test]
+    fn volume_up() -> anyhow::Result<()> {
+        // 03 01 12 e9 000000...
+        let kbd = Keyboard8890::new(None, 0)?;
+        let msgs = kbd.map_key("volumeup".to_string(), 1)?;
+        println!("{:02x?}", msgs);
+        assert_eq!(msgs.len(), 1, "number of messages created");
+        let expected = vec![0x03, 0x01, 0x12, 0xe9, 0x00, 0x00, 0x00, 0x00];
+        assert_eq!(msgs[0].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[0][..8], "checking message");
+        Ok(())
+    }
+
+    #[test]
+    fn calculator() -> anyhow::Result<()> {
+        // 03 01 12 e9 01 000000...
+        let kbd = Keyboard8890::new(None, 0)?;
+        let msgs = kbd.map_key("calculator".to_string(), 1)?;
+        println!("{:02x?}", msgs);
+        assert_eq!(msgs.len(), 1, "number of messages created");
+        let expected = vec![0x03, 0x01, 0x12, 0x92, 0x01, 0x00, 0x00, 0x00];
+        assert_eq!(msgs[0].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[0][..8], "checking message");
+        Ok(())
+    }
+
+    #[test]
+    fn back() -> anyhow::Result<()> {
+        // 03 01 12 24 02 000000...
+        let kbd = Keyboard8890::new(None, 0)?;
+        let msgs = kbd.map_key("webpageback".to_string(), 1)?;
+        println!("{:02x?}", msgs);
+        assert_eq!(msgs.len(), 1, "number of messages created");
+        let expected = vec![0x03, 0x01, 0x12, 0x24, 0x02, 0x00, 0x00, 0x00];
+        assert_eq!(msgs[0].len(), consts::PACKET_SIZE, "checking msg size");
+        assert_eq!(&expected, &msgs[0][..8], "checking message");
         Ok(())
     }
 }
