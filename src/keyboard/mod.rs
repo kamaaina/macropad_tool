@@ -262,6 +262,9 @@ pub enum MediaCode {
     ScreenLock = 0x19e,
     ScreenBrightnessUp = 0x6f,
     ScreenBrightnessDown = 0x70,
+    WebPageHome = 0x0223,
+    WebPageBack = 0x0224,
+    WebPageForward = 0x0225,
 }
 
 #[derive(

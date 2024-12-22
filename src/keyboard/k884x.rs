@@ -741,7 +741,7 @@ mod tests {
     #[test]
     fn back() -> anyhow::Result<()> {
         let kbd = Keyboard884x::new(None, 0, 0, 0x8842)?;
-        let msg = kbd.build_key_msg("back", 1u8, 1u8, 0)?;
+        let msg = kbd.build_key_msg("webpageback", 1u8, 1u8, 0)?;
         println!("{:02x?}", msg);
         assert_eq!(msg.len(), consts::PACKET_SIZE, "checking msg size");
         assert_eq!(msg[4], 0x02, "checking byte 4");
