@@ -1,2 +1,3 @@
 ATTRS{idProduct}=="8840", ATTRS{idVendor}=="1189", MODE="666", GROUP="users"
+ATTRS{idProduct}=="8842", ATTRS{idVendor}=="1189", MODE="666", GROUP="users"
 ATTRS{idProduct}=="8890", ATTRS{idVendor}=="1189", MODE="666", GROUP="users"
