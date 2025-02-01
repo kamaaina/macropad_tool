@@ -66,16 +66,17 @@ positions in your head, just set it here.
 
 Possible values are:
   (horizontal)
-  - 'normal': buttons on the left, rotary encoders on the right
-  - 'upsidedown': buttons on the right, rotary encoders on the left
+  - Normal: buttons on the left, rotary encoders on the right
+  - UpsideDown: buttons on the right, rotary encoders on the left
   (vertical)
-  - 'clockwise': buttons on the top, rotary encoders on the bottom
-  - 'counterclockwise': buttons on the bottom, rotary encoders on the top
+  - Clockwise: buttons on the top, rotary encoders on the bottom
+  - CounterClockwise: buttons on the bottom, rotary encoders on the top
 
 #+begin_src ron
 (
     device: (
-        orientation: "normal",
+        // Normal, Clockwise, CounterClockwise, UpsideDown
+        orientation: Normal,
 #+end_src
 
 ** Macropad Setup
@@ -219,7 +220,7 @@ macropad-tool program -c <ron_file>  # to specify a different configuration file
 Some keyboards support LEDs and you can program the different modes via the led command
 
 #+begin_example
-macropad-tool led <mode> <layer> <color> # Only for 8840 model
+macropad-tool led <mode> <layer> <color> # Only for 884x model
 macropad-tool led 1 1 red 
 macropad-tool led -h  # the help menu about different modes/colors
 #+end_example
