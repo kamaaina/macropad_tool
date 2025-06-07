@@ -8,42 +8,39 @@
 use nom::{
     character::complete::{char, digit1},
     combinator::{all_consuming, map_res},
-    error::ParseError,
+    error::{Error as NomError, ParseError},
     sequence::separated_pair,
-    IResult, InputLength, Parser,
+    Finish, IResult, Parser,
 };
-
 use std::str::FromStr;
 
-pub fn address(s: &str) -> IResult<&str, (u8, u8)> {
-    let byte = || map_res(digit1, u8::from_str);
-    let mut parser = separated_pair(byte(), char(':'), byte());
-    parser(s)
+/// Parses a string like "12:34" into (u8, u8)
+pub fn address(input: &str) -> IResult<&str, (u8, u8)> {
+    let byte = map_res(digit1, u8::from_str);
+    separated_pair(byte, char(':'), map_res(digit1, u8::from_str)).parse(input)
 }
 
-/// Parses string with given parser ensuring that whole input is consumed.
-pub fn parse<I, O, E, P>(parser: P, input: I) -> std::result::Result<O, E>
+/// Runs a parser and ensures the entire input is consumed
+pub fn parse<'a, O, E, P>(parser: P, input: &'a str) -> Result<O, E>
 where
-    I: InputLength,
-    E: ParseError<I>,
-    P: Parser<I, O, E>,
+    P: Parser<&'a str, Output = O, Error = E>,
+    E: ParseError<&'a str>,
 {
-    use nom::Finish as _;
-    all_consuming(parser)(input)
+    all_consuming(parser)
+        .parse(input)
         .finish()
-        .map(|(_, value)| value)
+        .map(|(_, out)| out)
 }
 
-/// Parses string using given parser, as `parse` do, but also converts string reference
-/// in returned error to String, so it may be used in implementations of `FromStr`.
-pub fn from_str<O, P>(parser: P, s: &str) -> std::result::Result<O, nom::error::Error<String>>
+/// Like `parse`, but converts error input to `String` for `FromStr`
+pub fn from_str<O, P>(parser: P, s: &str) -> Result<O, NomError<String>>
 where
-    for<'a> P: Parser<&'a str, O, nom::error::Error<&'a str>>,
+    for<'a> P: Parser<&'a str, Output = O, Error = NomError<&'a str>>,
 {
     match parse(parser, s) {
         Ok(value) => Ok(value),
-        Err(nom::error::Error { input, code }) => Err(nom::error::Error {
-            input: input.to_owned(),
+        Err(NomError { input, code }) => Err(NomError {
+            input: input.to_string(),
             code,
         }),
     }
