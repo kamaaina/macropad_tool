@@ -146,7 +146,7 @@ and pressed down like a button
 Mouse events are clicks ('click', 'rclick', 'mclick') or
 wheel events ('wheelup', 'wheeldown') with one optional modifier,
 only 'ctrl', 'shift' and 'alt' are supported ('ctrl-wheeldown')
-Clicks may combine several buttons, like this: 'click+rclick'
+Clicks may combine several buttons, like this: 'click-rclick'
 
 #+begin_src ron
         (
