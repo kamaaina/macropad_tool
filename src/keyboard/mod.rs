@@ -146,7 +146,7 @@ pub trait Keyboard: Messages + Configuration {
             consts::DEFAULT_TIMEOUT,
         )?;
         ensure!(written == msg.len(), "not all data written");
-        debug!("msg: {:02x?}", msg);
+        debug!("msg: {msg:02x?}");
         debug!("--------------------------------------------------");
         Ok(())
     }
@@ -162,8 +162,7 @@ pub trait Keyboard: Messages + Configuration {
                 .read_interrupt(self.get_in_endpoint(), buf, consts::DEFAULT_TIMEOUT);
 
         let mut bytes_read = 0;
-        if read.is_err() {
-            let e = read.err().unwrap();
+        if let Err(e) = read {
             match e {
                 Timeout => {
                     debug!("timeout on read");
@@ -171,7 +170,7 @@ pub trait Keyboard: Messages + Configuration {
                 }
 
                 _ => {
-                    eprintln!("error reading interrupt - {}", e);
+                    eprintln!("error reading interrupt - {e}");
                 }
             };
         } else {
@@ -179,7 +178,7 @@ pub trait Keyboard: Messages + Configuration {
         }
 
         debug!("bytes read: {bytes_read}");
-        debug!("data: {:02x?}", buf);
+        debug!("data: {buf:02x?}");
 
         Ok(bytes_read)
     }
@@ -398,6 +397,7 @@ pub enum WellKnownCode {
     F24,
 }
 
+#[allow(dead_code)] // TODO: implement
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 #[repr(u8)]
@@ -444,6 +444,7 @@ impl Display for MouseAction {
     }
 }
 
+#[allow(dead_code)] // TODO: implement
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MouseEvent(pub MouseAction, pub Option<MouseModifier>);
 
@@ -451,9 +452,9 @@ impl Display for MouseEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let Self(action, modifier) = self;
         if let Some(modifier) = modifier {
-            write!(f, "{}-", modifier)?;
+            write!(f, "{modifier}-")?;
         }
-        write!(f, "{}", action)?;
+        write!(f, "{action}")?;
         Ok(())
     }
 }

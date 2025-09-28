@@ -63,9 +63,8 @@ impl Decoder {
             let mut wheel_mapping = String::new();
             if buf[10] == 0x04 {
                 let mod_key = Self::get_key(&[buf[11], buf[12]]);
-                if mod_key.is_some() {
-                    let result = mod_key.unwrap();
-                    wheel_mapping = Self::modifier_to_str(result.modifier);
+                if let Some(kc) = mod_key {
+                    wheel_mapping = Self::modifier_to_str(kc.modifier);
                 }
             } else if buf[10] == 0x01 {
             }
@@ -168,7 +167,7 @@ impl Decoder {
 
     fn get_key(buf: &[u8]) -> Option<KeyCode> {
         let val = u16::from_be_bytes([buf[0], buf[1]]);
-        debug!("val: 0x{:02x}", val);
+        debug!("val: 0x{val:02x}");
         if val == 0 {
             return None;
         }

@@ -51,7 +51,7 @@ impl Configuration for Keyboard884x {
             // specific layer
             self.send(&self.read_config(device_info.num_keys, device_info.num_encoders, *layer))?;
             // read keys for specified layer
-            info!("reading keys for layer {}", layer);
+            info!("reading keys for layer {layer}");
             let data = self.read_config(device_info.num_keys, device_info.num_encoders, *layer);
             let _ = self.send(&data);
 
@@ -62,7 +62,7 @@ impl Configuration for Keyboard884x {
                     break;
                 }
                 debug!("bytes read: {bytes_read}");
-                debug!("data: {:02x?}", buf);
+                debug!("data: {buf:02x?}");
                 mappings.push(Decoder::get_key_mapping(&buf)?);
             }
         } else {
@@ -80,7 +80,7 @@ impl Configuration for Keyboard884x {
                         break;
                     }
                     debug!("bytes read: {bytes_read}");
-                    debug!("data: {:02x?}", buf);
+                    debug!("data: {buf:02x?}");
                     mappings.push(Decoder::get_key_mapping(&buf)?);
                 }
             }
@@ -93,7 +93,7 @@ impl Configuration for Keyboard884x {
         let mut knob_type = 0;
         let mut last_layer = 0;
         for km in mappings {
-            debug!("{:?}", km);
+            debug!("{km:?}");
             if km.layer != last_layer {
                 last_layer = km.layer;
                 knob_idx = 0;
@@ -113,7 +113,7 @@ impl Configuration for Keyboard884x {
                     km.keys.join(",");
             } else {
                 // knobs
-                debug!("knob idx: {} knob type: {}", knob_idx, knob_type);
+                debug!("knob idx: {knob_idx} knob type: {knob_type}");
                 match knob_type {
                     0 => {
                         mp.layers[(km.layer - 1) as usize].knobs[knob_idx].ccw.delay = km.delay;
@@ -193,7 +193,7 @@ impl Messages for Keyboard884x {
     fn program_led(&self, mode: u8, layer: u8, color: LedColor) -> Vec<u8> {
         let mut m_c = <LedColor as ToPrimitive>::to_u8(&color).unwrap();
         m_c |= mode;
-        debug!("mode and code: 0x{:02} layer: {layer}", m_c);
+        debug!("mode and code: 0x{m_c:02} layer: {layer}");
         let mut msg = vec![0x03, 0xfe, 0xb0, layer, 0x08];
         msg.extend_from_slice(&[0; 5]);
         msg.extend_from_slice(&[0x01, 0x00, m_c]);
@@ -438,7 +438,7 @@ impl Keyboard884x {
         let mut col;
         let mut row;
 
-        if key_num % cols == 0 {
+        if key_num.is_multiple_of(cols) {
             row = key_num / cols;
             row = row.saturating_sub(1);
         } else {

@@ -133,12 +133,12 @@ impl Mapping {
     /// `cfg_file` - configuration file to be read and parsed
     ///
     pub fn read(cfg_file: &str) -> Macropad {
-        debug!("configuration file: {}", cfg_file);
+        debug!("configuration file: {cfg_file}");
         let f = File::open(cfg_file).expect("Failed opening file");
         let config: Macropad = match from_reader(f) {
             Ok(x) => x,
             Err(e) => {
-                println!("Failed to load config: {}", e);
+                println!("Failed to load config: {e}");
                 std::process::exit(1);
             }
         };

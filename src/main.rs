@@ -115,7 +115,7 @@ fn main() -> Result<()> {
                     ));
                 }
             } else if let Some(pid) = product_id {
-                debug!("validating with supplied product id 0x{:02x}", pid);
+                debug!("validating with supplied product id 0x{pid:02x}");
                 Mapping::validate(config_file, Some(*pid))
                     .context("validating configuration file against specified product id")?;
                 println!("config is valid 👌")
