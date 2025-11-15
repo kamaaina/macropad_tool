@@ -18,6 +18,7 @@
 - [[#windows][Windows]]
   - [[#compiling][Compiling]]
   - [[#running-the-application][Running the Application]]
+- [[#macos][MacOS]]
 
 * Project Description
 
@@ -232,3 +233,7 @@ Installing rust with the installer prompts to install visual studio community ed
 
 ** Running the Application
 - You will need to install the USB Development Kit to be able to talk to the macropad. https://github.com/daynix/UsbDk/releases
+
+* MacOS
+
+Tested and confirmed working on MacOS with both intel and apple silicon
