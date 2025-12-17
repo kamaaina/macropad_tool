@@ -60,7 +60,7 @@ The README.md file is written in emacs org mode. To get a sample configuration f
 
 ** Orientation
 
-Normal macropad orienation is when buttons are on the left
+Normal macropad orientation is when buttons are on the left
 side and rotary encoders are on the right. However, you may want to use
 the macropad in another orienation. To avoid remapping button
 positions in your head, just set it here.
