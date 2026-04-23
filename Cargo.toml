@@ -5,10 +5,10 @@ edition = "2021"
 description = "Tool for programming macropad"
 
 [dependencies]
-anyhow = "1.0.101"
-clap = { version = "4.5.57", features = ["derive"] }
+anyhow = "1.0.102"
+clap = { version = "4.6.1", features = ["derive"] }
 enumset = "1.1.10"
-env_logger = "0.11.8"
+env_logger = "0.11.10"
 indoc = "2.0.7"
 itertools = "0.14.0"
 log = "0.4.29"
@@ -16,10 +16,10 @@ nom = "8.0.0"
 num = "0.4.3"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-ron = "0.12.0"
+ron = "0.12.1"
 rusb = "0.9.4"
 serde = { version = "1.0", features = ["derive"] }
-serde_with = "3.16.1"
+serde_with = "3.18.0"
 serde_yaml = "0.9.34"
-strum = "0.27.2"
-strum_macros = "0.27.2"
+strum = "0.28.0"
+strum_macros = "0.28.0"
