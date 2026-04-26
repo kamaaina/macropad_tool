@@ -56,6 +56,20 @@ impl Keyboard for Keyboard8890 {
         // FIXME: currently hardcoding the layer to 1 as the only 8890 device
         //        i have seen only has support for one layer. if we know of
         //        one that has multiple layers, we should refactor this then
+        //
+        // Until multi-layer support is confirmed for this device, reject configs
+        // with more than one layer rather than silently writing them all to the
+        // same physical slot (where the last layer wins and earlier layers are
+        // lost without warning).
+        if macropad.layers.len() > 1 {
+            return Err(anyhow!(
+                "this device is driven as single-layer but the provided configuration has {} layers. \
+                 all layers would be written to the same physical slot, silently overwriting earlier \
+                 layers. please reduce your mapping.ron to a single layer for the 8890",
+                macropad.layers.len()
+            ));
+        }
+
         self.send(&self.begin_programming(1))?;
 
         // get our layout of buttons relative to programming orientation
