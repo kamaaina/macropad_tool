@@ -124,11 +124,11 @@ impl Decoder {
             let result = val.unwrap();
             //println!("result: {:?}", result);
             let mut key_str = Self::modifier_to_str(result.modifier);
-            if result.media_code.is_some() {
+            if let Some(mc) = result.media_code {
                 if !key_str.is_empty() {
                     key_str += "-";
                 }
-                key_str += &result.media_code.unwrap().to_string();
+                key_str += &mc.to_string();
             }
             key_press.push(key_str);
             i += 1;
@@ -143,12 +143,12 @@ impl Decoder {
             // get the mapping
             let result = val.unwrap();
             let mut key_str = Self::modifier_to_str(result.modifier);
-            if result.wkc.is_some() {
+            if let Some(w) = result.wkc {
                 //println!("WKC!!!!");
                 if !key_str.is_empty() {
                     key_str += "-";
                 }
-                key_str += &result.wkc.unwrap().to_string();
+                key_str += &w.to_string();
             }
             key_press.push(key_str);
 
