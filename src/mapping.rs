@@ -248,7 +248,7 @@ impl Mapping {
                     return Err(anyhow!(
                         "{} - key '{}' at layer {} knob {} in ccw",
                         retval.err().unwrap(),
-                        &knob.ccw.mapping,
+                        knob.ccw.mapping,
                         i + 1,
                         k + 1
                     ));
@@ -258,7 +258,7 @@ impl Mapping {
                     return Err(anyhow!(
                         "{} - key '{}' at layer {} knob {} in press",
                         retval.err().unwrap(),
-                        &knob.press.mapping,
+                        knob.press.mapping,
                         i + 1,
                         k + 1
                     ));
@@ -268,7 +268,7 @@ impl Mapping {
                     return Err(anyhow!(
                         "{} - key '{}' at layer {} knob {} in cw",
                         retval.err().unwrap(),
-                        &knob.cw.mapping,
+                        knob.cw.mapping,
                         i + 1,
                         k + 1
                     ));
