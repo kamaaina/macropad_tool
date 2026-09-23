@@ -6,12 +6,12 @@ description = "Tool for programming macropad"
 
 [dependencies]
 anyhow = "1.0.104"
-clap = { version = "4.6.6", features = ["derive"] }
+clap = { version = "4.6.7", features = ["derive"] }
 enumset = "1.1.14"
 env_logger = "0.11.11"
 indoc = "2.0.7"
 itertools = "0.15.0"
-log = "0.4.33"
+log = "0.4.34"
 nom = "8.0.0"
 num = "0.4.3"
 num-derive = "0.5.1"
@@ -19,7 +19,7 @@ num-traits = "0.2.19"
 ron = "0.12.2"
 rusb = "0.9.4"
 serde = { version = "1.0", features = ["derive"] }
-serde_with = "3.22.0"
+serde_with = "3.23.0"
 serde_yaml = "0.9.34"
 strum = "0.28.0"
 strum_macros = "0.28.0"
