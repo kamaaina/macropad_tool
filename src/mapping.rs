@@ -371,26 +371,17 @@ impl Mapping {
 
     fn is_modifier_key(keystr: &str) -> bool {
         let ck = Modifier::from_str(keystr);
-        if ck.is_ok() {
-            return true;
-        }
-        false
+        ck.is_ok()
     }
 
     fn is_media_key(keystr: &str) -> bool {
         let mk = MediaCode::from_str(keystr);
-        if mk.is_ok() {
-            return true;
-        }
-        false
+        mk.is_ok()
     }
 
     fn is_regular_key(keystr: &str) -> bool {
         let rk = WellKnownCode::from_str(keystr);
-        if rk.is_ok() {
-            return true;
-        }
-        false
+        rk.is_ok()
     }
 
     fn is_mouse_action(keystr: &str) -> bool {
